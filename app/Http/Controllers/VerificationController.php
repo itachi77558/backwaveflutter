@@ -13,28 +13,8 @@ class VerificationController extends Controller
 {
     public function sendVerificationCode(Request $request)
     {
-        // Validation du numéro de téléphone
-        $validator = Validator::make($request->all(), [
-            'phone_number' => 'required|string|unique:verification_codes',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-        // Générer un code de vérification aléatoire
-        $code = rand(100000, 999999);
-
-        // Enregistrer ou mettre à jour le code dans la base de données
-        VerificationCode::updateOrCreate(
-            ['phone_number' => $request->phone_number],
-            ['code' => $code]
-        );
-
-        // Envoyer le code via Twilio
-        $this->sendSms($request->phone_number, "Your verification code is $code");
-
-        return response()->json(['message' => 'Verification code sent successfully.']);
+        // Logique de vérification ici
+        return response()->json(['message' => 'Code de vérification envoyé.']);
     }
 
     private function sendSms($phoneNumber, $message)
