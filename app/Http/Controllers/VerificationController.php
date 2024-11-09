@@ -38,16 +38,21 @@ class VerificationController extends Controller
     }
 
     private function sendSms($phoneNumber, $message)
-    {
-        // Remplacez par vos identifiants Twilio dans le fichier .env
-        $sid = env('TWILIO_SID');
-        $token = env('TWILIO_AUTH_TOKEN');
-        $from = env('TWILIO_PHONE_NUMBER');
+{
+    $sid = env('TWILIO_SID');
+    $token = env('TWILIO_AUTH_TOKEN');
+    $from = env('TWILIO_PHONE_NUMBER');
 
-        $twilio = new Client($sid, $token);
-        $twilio->messages->create($phoneNumber, [
-            'from' => $from,
-            'body' => $message
-        ]);
+    // Vérifier les valeurs des variables d'environnement
+    if (!$sid || !$token || !$from) {
+        throw new \Exception('Twilio credentials are missing');
     }
+
+    $twilio = new Client($sid, $token);
+    $twilio->messages->create($phoneNumber, [
+        'from' => $from,
+        'body' => $message
+    ]);
+}
+
 }
