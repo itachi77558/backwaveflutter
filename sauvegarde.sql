@@ -306,7 +306,6 @@ COPY public.users (id, name, email, email_verified_at, password, remember_token,
 --
 
 COPY public.verification_codes (id, phone_number, code, created_at) FROM stdin;
-1	+221775588834	404234	2024-11-09 21:56:23
 \.
 
 
@@ -342,7 +341,7 @@ SELECT pg_catalog.setval('public.users_id_seq', 1, false);
 -- Name: verification_codes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.verification_codes_id_seq', 1, true);
+SELECT pg_catalog.setval('public.verification_codes_id_seq', 1, false);
 
 
 --
