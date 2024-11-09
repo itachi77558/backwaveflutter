@@ -16,8 +16,8 @@ services:
       DB_HOST: postgres  # Nom du service PostgreSQL
       DB_PORT: 5432
       DB_DATABASE: wavebackflutter
-      DB_USERNAME: wavebackflutter_user
-      DB_PASSWORD: TR7erUxNbB9L0hNiNLV8SYFxAD7sM4uZ
+      DB_USERNAME: pfdev31
+      DB_PASSWORD: sharingan666
 
   webserver:
     build:
