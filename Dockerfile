@@ -1,16 +1,27 @@
-# Étape 1 : utiliser une image de base officielle PHP avec extensions nécessaires pour Laravel et PostgreSQL
+# Utilisation de l'image PHP officielle
 FROM php:8.1-fpm
 
-# Installer des dépendances supplémentaires, PostgreSQL et outils nécessaires
+# Installation des dépendances système
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpq-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
     zip \
     unzip \
-    && docker-php-ext-install pdo_pgsql
+    git \
+    curl \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libpq-dev \   
+    && pecl install grpc \
+    && docker-php-ext-enable grpc
 
-# Installer Composer
+# Installation des extensions PHP requises  
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+&& docker-php-ext-install pdo_mysql pdo_pgsql gd mbstring zip xml  # Ajout de pdo_pgsql pour PostgreSQL
+
+# Installation de Composer   
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Définir le répertoire de travail
@@ -19,20 +30,16 @@ WORKDIR /var/www/html
 # Copier les fichiers du projet dans le conteneur
 COPY . .
 
-# Créer le fichier .env s'il n'existe pas encore
-RUN cp .env.example .env
+# Installation des dépendances PHP avec Composer
+RUN composer install --no-dev --optimize-autoloader
 
-# Installer les dépendances du projet avec Composer
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Ajuster les permissions des fichiers
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Générer la clé d'application Laravel (ne fonctionnera que si .env existe)
-RUN php artisan key:generate
+# Exposer le port défini dans la variable d'environnement PORT
+EXPOSE $PORT
 
-# Donner les permissions nécessaires au dossier de stockage
-RUN chmod -R 777 storage bootstrap/cache
-
-# Exposer le port 9000 pour PHP-FPM
-EXPOSE 9000
-
-# Exécuter les migrations après s'assurer que la base de données est prête
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=9000
+# Commande pour démarrer l'application
+CMD php artisan serve --host=0.0.0.0 --port=$PORT
