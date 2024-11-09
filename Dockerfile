@@ -19,10 +19,13 @@ WORKDIR /var/www/html
 # Copier les fichiers du projet dans le conteneur
 COPY . .
 
+# Créer le fichier .env s'il n'existe pas encore
+RUN cp .env.example .env
+
 # Installer les dépendances du projet avec Composer
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Générer la clé d'application Laravel
+# Générer la clé d'application Laravel (ne fonctionnera que si .env existe)
 RUN php artisan key:generate
 
 # Donner les permissions nécessaires au dossier de stockage
@@ -31,5 +34,5 @@ RUN chmod -R 777 storage bootstrap/cache
 # Exposer le port 9000 pour PHP-FPM
 EXPOSE 9000
 
-# Exécuter les migrations et le serveur
+# Exécuter les migrations après s'assurer que la base de données est prête
 CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=9000
