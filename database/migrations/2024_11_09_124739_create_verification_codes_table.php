@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Lier le code de vérification à un utilisateur
             $table->string('code');
-            $table->timestamp('created_at')->useCurrent();
+            $table->timestamps(); // Ajoute `created_at` et `updated_at`
+
         });
     }
 
