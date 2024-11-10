@@ -3,12 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\UserCardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
+    protected $userCardService;
+
+
+    public function __construct(UserCardService $userCardService)
+    {
+        $this->userCardService = $userCardService;
+    }
     public function createAccount(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,6 +44,9 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        $this->userCardService->sendUserCardByEmail($user);
+
 
         return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
     }
