@@ -55,4 +55,28 @@ class VerificationController extends Controller
     ]);
 }
 
+public function verifyCode(Request $request)
+{
+    // Valider le numéro de téléphone et le code de vérification
+    $validator = Validator::make($request->all(), [
+        'phone_number' => 'required|string',
+        'verification_code' => 'required|integer'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
+    }
+
+    // Rechercher le code de vérification dans la base de données
+    $verificationCode = VerificationCode::where('phone_number', $request->phone_number)
+        ->where('code', $request->verification_code)
+        ->first();
+
+    if ($verificationCode) {
+        return response()->json(['message' => 'Verification successful'], 200);
+    } else {
+        return response()->json(['error' => 'Invalid verification code'], 400);
+    }
+}
+
 }
