@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\VerificationCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -24,17 +25,23 @@ class UserController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
+        // Vérifier que le numéro de téléphone est validé
+        $verificationCode = VerificationCode::where('phone_number', $request->phone_number)
+            ->where('verified', true)
+            ->first();
+
+        if (!$verificationCode) {
+            return response()->json(['error' => 'Phone number not verified.'], 400);
+        }
+
         // Créer un utilisateur
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
             'phone_number' => $request->phone_number,
-            'password' => Hash::make($request->password), // Hashage du mot de passe
+            'password' => Hash::make($request->password),
         ]);
-
-        logger('Requête reçue : ', $request->all());
-
 
         return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
     }
