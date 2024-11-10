@@ -21,7 +21,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: failed_jobs; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
 CREATE TABLE public.failed_jobs (
@@ -35,10 +34,8 @@ CREATE TABLE public.failed_jobs (
 );
 
 
-ALTER TABLE public.failed_jobs OWNER TO pfdev31;
 
 --
--- Name: failed_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
 --
 
 CREATE SEQUENCE public.failed_jobs_id_seq
@@ -49,17 +46,14 @@ CREATE SEQUENCE public.failed_jobs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.failed_jobs_id_seq OWNER TO pfdev31;
 
 --
--- Name: failed_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
 --
 
 ALTER SEQUENCE public.failed_jobs_id_seq OWNED BY public.failed_jobs.id;
 
 
 --
--- Name: migrations; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
 CREATE TABLE public.migrations (
@@ -69,10 +63,8 @@ CREATE TABLE public.migrations (
 );
 
 
-ALTER TABLE public.migrations OWNER TO pfdev31;
 
 --
--- Name: migrations_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
 --
 
 CREATE SEQUENCE public.migrations_id_seq
@@ -84,17 +76,14 @@ CREATE SEQUENCE public.migrations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.migrations_id_seq OWNER TO pfdev31;
 
 --
--- Name: migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
 --
 
 ALTER SEQUENCE public.migrations_id_seq OWNED BY public.migrations.id;
 
 
 --
--- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
 CREATE TABLE public.password_reset_tokens (
@@ -104,10 +93,8 @@ CREATE TABLE public.password_reset_tokens (
 );
 
 
-ALTER TABLE public.password_reset_tokens OWNER TO pfdev31;
 
 --
--- Name: personal_access_tokens; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
 CREATE TABLE public.personal_access_tokens (
@@ -124,10 +111,8 @@ CREATE TABLE public.personal_access_tokens (
 );
 
 
-ALTER TABLE public.personal_access_tokens OWNER TO pfdev31;
 
 --
--- Name: personal_access_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
 --
 
 CREATE SEQUENCE public.personal_access_tokens_id_seq
@@ -138,17 +123,14 @@ CREATE SEQUENCE public.personal_access_tokens_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.personal_access_tokens_id_seq OWNER TO pfdev31;
 
 --
--- Name: personal_access_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
 --
 
 ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_access_tokens.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
 CREATE TABLE public.users (
@@ -163,10 +145,8 @@ CREATE TABLE public.users (
 );
 
 
-ALTER TABLE public.users OWNER TO pfdev31;
 
 --
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
 --
 
 CREATE SEQUENCE public.users_id_seq
@@ -177,17 +157,14 @@ CREATE SEQUENCE public.users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.users_id_seq OWNER TO pfdev31;
 
 --
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- Name: verification_codes; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
 CREATE TABLE public.verification_codes (
@@ -198,10 +175,8 @@ CREATE TABLE public.verification_codes (
 );
 
 
-ALTER TABLE public.verification_codes OWNER TO pfdev31;
 
 --
--- Name: verification_codes_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
 --
 
 CREATE SEQUENCE public.verification_codes_id_seq
@@ -212,52 +187,44 @@ CREATE SEQUENCE public.verification_codes_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.verification_codes_id_seq OWNER TO pfdev31;
 
 --
--- Name: verification_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
 --
 
 ALTER SEQUENCE public.verification_codes_id_seq OWNED BY public.verification_codes.id;
 
 
 --
--- Name: failed_jobs id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.failed_jobs ALTER COLUMN id SET DEFAULT nextval('public.failed_jobs_id_seq'::regclass);
 
 
 --
--- Name: migrations id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.migrations ALTER COLUMN id SET DEFAULT nextval('public.migrations_id_seq'::regclass);
 
 
 --
--- Name: personal_access_tokens id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.personal_access_tokens ALTER COLUMN id SET DEFAULT nextval('public.personal_access_tokens_id_seq'::regclass);
 
 
 --
--- Name: users id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 
 --
--- Name: verification_codes id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.verification_codes ALTER COLUMN id SET DEFAULT nextval('public.verification_codes_id_seq'::regclass);
 
 
 --
--- Data for Name: failed_jobs; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.failed_jobs (id, uuid, connection, queue, payload, exception, failed_at) FROM stdin;
@@ -265,7 +232,6 @@ COPY public.failed_jobs (id, uuid, connection, queue, payload, exception, failed
 
 
 --
--- Data for Name: migrations; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.migrations (id, migration, batch) FROM stdin;
@@ -278,7 +244,6 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 
 
 --
--- Data for Name: password_reset_tokens; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.password_reset_tokens (email, token, created_at) FROM stdin;
@@ -286,7 +251,6 @@ COPY public.password_reset_tokens (email, token, created_at) FROM stdin;
 
 
 --
--- Data for Name: personal_access_tokens; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, token, abilities, last_used_at, expires_at, created_at, updated_at) FROM stdin;
@@ -294,7 +258,6 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 
 
 --
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.users (id, first_name, last_name, email, phone_number, password, created_at, updated_at) FROM stdin;
@@ -302,7 +265,6 @@ COPY public.users (id, first_name, last_name, email, phone_number, password, cre
 
 
 --
--- Data for Name: verification_codes; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.verification_codes (id, phone_number, code, created_at) FROM stdin;
@@ -310,42 +272,36 @@ COPY public.verification_codes (id, phone_number, code, created_at) FROM stdin;
 
 
 --
--- Name: failed_jobs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
 SELECT pg_catalog.setval('public.failed_jobs_id_seq', 1, false);
 
 
 --
--- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
 SELECT pg_catalog.setval('public.migrations_id_seq', 5, true);
 
 
 --
--- Name: personal_access_tokens_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
 SELECT pg_catalog.setval('public.personal_access_tokens_id_seq', 1, false);
 
 
 --
--- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
 SELECT pg_catalog.setval('public.users_id_seq', 1, false);
 
 
 --
--- Name: verification_codes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
 SELECT pg_catalog.setval('public.verification_codes_id_seq', 1, false);
 
 
 --
--- Name: failed_jobs failed_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.failed_jobs
@@ -353,7 +309,6 @@ ALTER TABLE ONLY public.failed_jobs
 
 
 --
--- Name: failed_jobs failed_jobs_uuid_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.failed_jobs
@@ -361,7 +316,6 @@ ALTER TABLE ONLY public.failed_jobs
 
 
 --
--- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.migrations
@@ -369,7 +323,6 @@ ALTER TABLE ONLY public.migrations
 
 
 --
--- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.password_reset_tokens
@@ -377,7 +330,6 @@ ALTER TABLE ONLY public.password_reset_tokens
 
 
 --
--- Name: personal_access_tokens personal_access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.personal_access_tokens
@@ -385,7 +337,6 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
--- Name: personal_access_tokens personal_access_tokens_token_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.personal_access_tokens
@@ -393,7 +344,6 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
--- Name: users users_email_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.users
@@ -401,7 +351,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: users users_phone_number_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.users
@@ -409,7 +358,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.users
@@ -417,7 +365,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: verification_codes verification_codes_phone_number_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.verification_codes
@@ -425,7 +372,6 @@ ALTER TABLE ONLY public.verification_codes
 
 
 --
--- Name: verification_codes verification_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.verification_codes
@@ -433,7 +379,6 @@ ALTER TABLE ONLY public.verification_codes
 
 
 --
--- Name: personal_access_tokens_tokenable_type_tokenable_id_index; Type: INDEX; Schema: public; Owner: pfdev31
 --
 
 CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.personal_access_tokens USING btree (tokenable_type, tokenable_id);
@@ -443,7 +388,6 @@ CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.
 -- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
 --
 
-GRANT ALL ON SCHEMA public TO pfdev31;
 
 
 --

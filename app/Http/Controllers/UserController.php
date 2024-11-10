@@ -33,6 +33,9 @@ class UserController extends Controller
             'password' => Hash::make($request->password), // Hashage du mot de passe
         ]);
 
+        dd($request->all()); // Vérification des données reçues
+
+
         return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
     }
 }
