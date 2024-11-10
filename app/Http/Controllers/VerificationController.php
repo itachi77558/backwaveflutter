@@ -25,7 +25,9 @@ class VerificationController extends Controller
         [
             'first_name' => 'Pending', 
             'last_name' => 'User', 
-            'email' => 'pending_' . time() . '@example.com' // Email temporaire
+            'email' => 'pending_' . time() . '@example.com', // Email temporaire
+            'password' => bcrypt('temporary_password') // Ajout d'un mot de passe temporaire
+
         ]
     );
 
