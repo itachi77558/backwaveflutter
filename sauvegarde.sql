@@ -155,11 +155,12 @@ CREATE TABLE public.users (
     id bigint NOT NULL,
     first_name character varying(255) NOT NULL,
     last_name character varying(255) NOT NULL,
-    email character varying(255) NOT NULL,
+    email character varying(255),
     phone_number character varying(255) NOT NULL,
-    password character varying(255) NOT NULL,
+    password character varying(255),
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    is_phone_verified boolean DEFAULT false NOT NULL
 );
 
 
@@ -194,7 +195,8 @@ CREATE TABLE public.verification_codes (
     id bigint NOT NULL,
     user_id bigint NOT NULL,
     code character varying(255) NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
 );
 
 
@@ -274,6 +276,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 3	2019_08_19_000000_create_failed_jobs_table	1
 4	2019_12_14_000001_create_personal_access_tokens_table	1
 5	2024_11_09_124739_create_verification_codes_table	1
+6	2024_11_10_153724_add_is_phone_verified_to_users_table	1
 \.
 
 
@@ -297,7 +300,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.users (id, first_name, last_name, email, phone_number, password, created_at, updated_at) FROM stdin;
+COPY public.users (id, first_name, last_name, email, phone_number, password, created_at, updated_at, is_phone_verified) FROM stdin;
 \.
 
 
@@ -305,7 +308,7 @@ COPY public.users (id, first_name, last_name, email, phone_number, password, cre
 -- Data for Name: verification_codes; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.verification_codes (id, user_id, code, created_at) FROM stdin;
+COPY public.verification_codes (id, user_id, code, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -320,7 +323,7 @@ SELECT pg_catalog.setval('public.failed_jobs_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 5, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 6, true);
 
 
 --

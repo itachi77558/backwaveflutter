@@ -39,4 +39,33 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
     }
+
+
+    public function login(Request $request)
+    {
+        // Validation des informations d'identification
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        // Récupération de l'utilisateur
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        // Création d'un token pour l'utilisateur (avec Laravel Sanctum par exemple)
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Retourner la réponse avec le token
+        return response()->json([
+            'message' => 'Login successful',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ], 200);
+    }
+
+    
 }
