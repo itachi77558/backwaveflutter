@@ -153,11 +153,11 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    name character varying(255) NOT NULL,
+    first_name character varying(255) NOT NULL,
+    last_name character varying(255) NOT NULL,
     email character varying(255) NOT NULL,
-    email_verified_at timestamp(0) without time zone,
+    phone_number character varying(255) NOT NULL,
     password character varying(255) NOT NULL,
-    remember_token character varying(100),
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone
 );
@@ -297,7 +297,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at) FROM stdin;
+COPY public.users (id, first_name, last_name, email, phone_number, password, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -398,6 +398,14 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_email_unique UNIQUE (email);
+
+
+--
+-- Name: users users_phone_number_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_phone_number_unique UNIQUE (phone_number);
 
 
 --

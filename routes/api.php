@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -22,4 +23,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/send-verification-code', [VerificationController::class, 'sendVerificationCode']);
 Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
+Route::post('/create-account', [UserController::class, 'createAccount']);
+
 
