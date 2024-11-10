@@ -11,33 +11,38 @@ use Twilio\Rest\Client;
 class VerificationController extends Controller
 {
     public function sendVerificationCode(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone_number' => 'required|string',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'phone_number' => 'required|string',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-        $user = User::firstOrCreate(
-            ['phone_number' => $request->phone_number],
-            ['first_name' => 'Pending', 'last_name' => 'User'] // Valeurs par défaut si utilisateur n'existe pas
-        );
-
-        // Générer un code de vérification aléatoire
-        $code = rand(100000, 999999);
-
-        // Enregistrer ou mettre à jour le code dans la base de données
-        $user->verificationCode()->updateOrCreate(
-            ['user_id' => $user->id],
-            ['code' => $code]
-        );
-
-        $this->sendSms($user->phone_number, "Your verification code is $code");
-
-        return response()->json(['message' => 'Verification code sent successfully.']);
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
     }
+
+    $user = User::firstOrCreate(
+        ['phone_number' => $request->phone_number],
+        [
+            'first_name' => 'Pending', 
+            'last_name' => 'User', 
+            'email' => 'pending_' . time() . '@example.com' // Email temporaire
+        ]
+    );
+
+    // Générer un code de vérification aléatoire
+    $code = rand(100000, 999999);
+
+    // Enregistrer ou mettre à jour le code dans la base de données
+    $user->verificationCode()->updateOrCreate(
+        ['user_id' => $user->id],
+        ['code' => $code]
+    );
+
+    $this->sendSms($user->phone_number, "Your verification code is $code");
+
+    return response()->json(['message' => 'Verification code sent successfully.']);
+}
+
 
     private function sendSms($phoneNumber, $message)
     {

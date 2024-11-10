@@ -192,7 +192,7 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 CREATE TABLE public.verification_codes (
     id bigint NOT NULL,
-    phone_number character varying(255) NOT NULL,
+    user_id bigint NOT NULL,
     code character varying(255) NOT NULL,
     created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -305,7 +305,7 @@ COPY public.users (id, first_name, last_name, email, phone_number, password, cre
 -- Data for Name: verification_codes; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.verification_codes (id, phone_number, code, created_at) FROM stdin;
+COPY public.verification_codes (id, user_id, code, created_at) FROM stdin;
 \.
 
 
@@ -417,14 +417,6 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: verification_codes verification_codes_phone_number_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
---
-
-ALTER TABLE ONLY public.verification_codes
-    ADD CONSTRAINT verification_codes_phone_number_unique UNIQUE (phone_number);
-
-
---
 -- Name: verification_codes verification_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
@@ -437,6 +429,14 @@ ALTER TABLE ONLY public.verification_codes
 --
 
 CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.personal_access_tokens USING btree (tokenable_type, tokenable_id);
+
+
+--
+-- Name: verification_codes verification_codes_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.verification_codes
+    ADD CONSTRAINT verification_codes_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
