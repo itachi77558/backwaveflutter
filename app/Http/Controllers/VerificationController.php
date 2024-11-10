@@ -1,9 +1,8 @@
 <?php
 
-// app/Http/Controllers/VerificationController.php
-
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\VerificationCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -13,70 +12,68 @@ class VerificationController extends Controller
 {
     public function sendVerificationCode(Request $request)
     {
-        // Validation du numéro de téléphone
         $validator = Validator::make($request->all(), [
-            'phone_number' => 'required|string|unique:verification_codes',
+            'phone_number' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
 
+        $user = User::firstOrCreate(
+            ['phone_number' => $request->phone_number],
+            ['first_name' => 'Pending', 'last_name' => 'User'] // Valeurs par défaut si utilisateur n'existe pas
+        );
+
         // Générer un code de vérification aléatoire
         $code = rand(100000, 999999);
 
         // Enregistrer ou mettre à jour le code dans la base de données
-        VerificationCode::updateOrCreate(
-            ['phone_number' => $request->phone_number],
+        $user->verificationCode()->updateOrCreate(
+            ['user_id' => $user->id],
             ['code' => $code]
         );
 
-        // Envoyer le code via Twilio (assurez-vous d'avoir configuré Twilio)
-        $this->sendSms($request->phone_number, "Your verification code is $code");
+        $this->sendSms($user->phone_number, "Your verification code is $code");
 
         return response()->json(['message' => 'Verification code sent successfully.']);
     }
 
     private function sendSms($phoneNumber, $message)
-{
-    $sid = env('TWILIO_SID');
-    $token = env('TWILIO_AUTH_TOKEN');
-    $from = env('TWILIO_PHONE_NUMBER');
+    {
+        $sid = env('TWILIO_SID');
+        $token = env('TWILIO_AUTH_TOKEN');
+        $from = env('TWILIO_PHONE_NUMBER');
 
-    // Vérifier les valeurs des variables d'environnement
-    if (!$sid || !$token || !$from) {
-        throw new \Exception('Twilio credentials are missing');
+        if (!$sid || !$token || !$from) {
+            throw new \Exception('Twilio credentials are missing');
+        }
+
+        $twilio = new Client($sid, $token);
+        $twilio->messages->create($phoneNumber, [
+            'from' => $from,
+            'body' => $message
+        ]);
     }
 
-    $twilio = new Client($sid, $token);
-    $twilio->messages->create($phoneNumber, [
-        'from' => $from,
-        'body' => $message
-    ]);
-}
+    public function verifyCode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'required|string',
+            'verification_code' => 'required|integer'
+        ]);
 
-public function verifyCode(Request $request)
-{
-    // Valider le numéro de téléphone et le code de vérification
-    $validator = Validator::make($request->all(), [
-        'phone_number' => 'required|string',
-        'verification_code' => 'required|integer'
-    ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
 
-    if ($validator->fails()) {
-        return response()->json(['error' => $validator->errors()], 400);
+        $user = User::where('phone_number', $request->phone_number)->first();
+
+        if ($user && $user->verificationCode && $user->verificationCode->code == $request->verification_code) {
+            $user->update(['is_phone_verified' => true]);
+            return response()->json(['message' => 'Verification successful'], 200);
+        } else {
+            return response()->json(['error' => 'Invalid verification code'], 400);
+        }
     }
-
-    // Rechercher le code de vérification dans la base de données
-    $verificationCode = VerificationCode::where('phone_number', $request->phone_number)
-        ->where('code', $request->verification_code)
-        ->first();
-
-    if ($verificationCode) {
-        return response()->json(['message' => 'Verification successful'], 200);
-    } else {
-        return response()->json(['error' => 'Invalid verification code'], 400);
-    }
-}
-
 }
