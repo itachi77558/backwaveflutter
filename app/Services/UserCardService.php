@@ -13,7 +13,7 @@ class UserCardService
 {
     public function generateAndUploadQrCode(User $user)
     {
-        // Génération du QR code en mémoire
+        // Génération du QR code
         $qrCode = Builder::create()
             ->writer(new PngWriter())
             ->data("User ID: {$user->id}")
@@ -21,24 +21,38 @@ class UserCardService
             ->margin(10)
             ->build();
 
-        // Utilisation de Cloudinary en passant le contenu binaire du QR code
-        $uploadResult = Cloudinary::upload(
-            $qrCode->getString(),
-            [
+        // Créer un nom de fichier temporaire unique
+        $tempFile = storage_path('app/temp/' . Str::random(40) . '.png');
+        
+        // Assurer que le répertoire existe
+        if (!file_exists(dirname($tempFile))) {
+            mkdir(dirname($tempFile), 0777, true);
+        }
+
+        // Sauvegarder le QR code dans un fichier temporaire
+        $qrCode->saveToFile($tempFile);
+
+        try {
+            // Upload vers Cloudinary
+            $uploadResult = Cloudinary::upload($tempFile, [
                 'folder' => 'user_qrcodes',
                 'public_id' => "user_{$user->id}_qrcode",
-                'resource_type' => 'image',
-                'format' => 'png' // Assurez-vous que le fichier est reconnu en tant qu'image
-            ]
-        );
+                'resource_type' => 'image'
+            ]);
 
-        // Récupération de l'URL sécurisée du QR code
-        $qrCodeUrl = $uploadResult->getSecurePath();
+            // Récupération de l'URL sécurisée
+            $qrCodeUrl = $uploadResult->getSecurePath();
 
-        // Mise à jour de l'utilisateur avec l'URL du QR code
-        $user->update(['qr_code_url' => $qrCodeUrl]);
+            // Mise à jour de l'utilisateur
+            $user->update(['qr_code_url' => $qrCodeUrl]);
 
-        return $qrCodeUrl;
+            return $qrCodeUrl;
+        } finally {
+            // Nettoyage : supprimer le fichier temporaire
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+        }
     }
 
     public function sendUserCardByEmail(User $user)
