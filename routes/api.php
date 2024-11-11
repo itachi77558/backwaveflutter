@@ -30,7 +30,6 @@ Route::post('/login', [UserController::class, 'login']);
 
 
 Route::post('/transaction/send', [UserController::class, 'sendTransaction'])->name('transaction.send');
-
 Route::post('/contacts/check', [UserController::class, 'checkContacts'])->name('contacts.check');
 Route::get('/transactions', [UserController::class, 'getAllTransactions'])->name('transactions.all');
 

@@ -13,11 +13,10 @@ return new class extends Migration
 {
     Schema::create('transactions', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('sender_id')->constrained('users')->onDelete('cascade'); // utilisateur qui envoie
-        $table->foreignId('receiver_id')->nullable()->constrained('users')->onDelete('cascade'); // utilisateur qui reçoit (peut être null si non trouvé)
-        $table->string('phone_number'); // numéro du destinataire
-        $table->enum('transaction_type', ['transfer', 'withdrawal']);
-        $table->decimal('amount', 10, 2);
+        $table->enum('type', ['transfer', 'withdraw']);
+        $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+        $table->foreignId('receiver_id')->nullable()->constrained('users')->onDelete('cascade');
+        $table->decimal('amount', 15, 2);
         $table->timestamps();
     });
 }

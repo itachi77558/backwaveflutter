@@ -13,6 +13,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 
@@ -212,57 +213,102 @@ class UserController extends Controller
     }
 
 
-    public function sendTransaction(Request $request)
-{
-    $request->validate([
-        'sender_id' => 'required|exists:users,id',
-        'phone_number' => 'required|string',
-        'transaction_type' => 'required|in:transfer,withdrawal',
-        'amount' => 'required|numeric|min:0.01',
-    ]);
-
-    $sender = User::find($request->sender_id);
-    $receiver = User::where('phone_number', $request->phone_number)->first();
-
-    // Si le receiver existe dans la base de données
-    if ($receiver) {
-        // Enregistrement de la transaction
-        $transaction = Transaction::create([
-            'sender_id' => $sender->id,
-            'receiver_id' => $receiver->id,
-            'phone_number' => $request->phone_number,
-            'transaction_type' => $request->transaction_type,
-            'amount' => $request->amount,
+    public function transfer(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'sender_id' => 'required|exists:users,id',
+            'receiver_phone' => 'required|exists:users,phone_number',
+            'amount' => 'required|numeric|min:1',
         ]);
 
-        // Vérification des contacts locaux via Flutter (intégration côté app Flutter)
-        // Envoie une réponse à Flutter pour l'inviter à enregistrer le contact si ce n'est pas déjà fait
-        return response()->json([
-            'message' => 'Transaction successful',
-            'transaction' => $transaction,
-            'add_to_contacts' => !in_array($receiver->phone_number, $this->getAndroidContacts())
-        ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
 
-    } else {
-        // Transaction refusée si le contact n'existe pas
-        return response()->json(['error' => 'Receiver not found in the system'], 400);
+        $sender = User::find($request->sender_id);
+        $receiver = User::where('phone_number', $request->receiver_phone)->first();
+
+        if ($sender->balance < $request->amount) {
+            return response()->json(['error' => 'Insufficient balance'], 400);
+        }
+
+        DB::transaction(function () use ($sender, $receiver, $request) {
+            $sender->balance -= $request->amount;
+            $sender->save();
+
+            $receiver->balance += $request->amount;
+            $receiver->save();
+
+            Transaction::create([
+                'type' => 'transfer',
+                'sender_id' => $sender->id,
+                'receiver_id' => $receiver->id,
+                'amount' => $request->amount,
+            ]);
+        });
+
+        return response()->json(['message' => 'Transfer successful'], 200);
     }
-}
+
+    // Effectuer un retrait pour l'utilisateur
+    public function withdraw(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        $user = User::find($request->user_id);
+
+        if ($user->balance < $request->amount) {
+            return response()->json(['error' => 'Insufficient balance'], 400);
+        }
+
+        DB::transaction(function () use ($user, $request) {
+            $user->balance -= $request->amount;
+            $user->save();
+
+            Transaction::create([
+                'type' => 'withdraw',
+                'sender_id' => $user->id,
+                'receiver_id' => null,
+                'amount' => $request->amount,
+            ]);
+        });
+
+        return response()->json(['message' => 'Withdrawal successful'], 200);
+    }
+
+    // Lister toutes les transactions
+    public function listTransactions(Request $request)
+    {
+        $userId = $request->user_id;
+        $transactions = Transaction::where('sender_id', $userId)
+                                   ->orWhere('receiver_id', $userId)
+                                   ->get();
+
+        return response()->json($transactions);
+    }
 
 
-public function checkContacts(Request $request)
-{
-    // Récupérer les contacts envoyés depuis Flutter
-    $contacts = $request->input('contacts'); // Supposons que les contacts sont envoyés sous forme de tableau de numéros de téléphone
+    public function checkContacts(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone_numbers' => 'required|array'
+        ]);
 
-    // Vérifier quels contacts existent dans la base de données
-    $existingContacts = User::whereIn('phone_number', $contacts)->get(['id', 'phone_number', 'first_name', 'last_name']);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
 
-    // Retourner les contacts trouvés sous forme de réponse JSON
-    return response()->json([
-        'existing_contacts' => $existingContacts
-    ]);
-}
+        $contacts = User::whereIn('phone_number', $request->phone_numbers)
+                        ->get(['id', 'phone_number', 'first_name', 'last_name']);
+        return response()->json($contacts);
+    }
 
 
 protected function getAndroidContacts()

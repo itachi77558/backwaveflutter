@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['sender_id', 'receiver_id', 'phone_number', 'transaction_type', 'amount'];
+    use HasFactory;
+
+    protected $fillable = [
+        'type', 'sender_id', 'receiver_id', 'amount'
+    ];
 
     public function sender()
     {
@@ -19,4 +23,3 @@ class Transaction extends Model
         return $this->belongsTo(User::class, 'receiver_id');
     }
 }
-
