@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
@@ -29,7 +30,8 @@ Route::post('/login', [UserController::class, 'login']);
 
 
 
-Route::post('/transaction/send', [UserController::class, 'sendTransaction'])->name('transaction.send');
 Route::post('/contacts/check', [UserController::class, 'checkContacts'])->name('contacts.check');
-Route::get('/transactions', [UserController::class, 'getAllTransactions'])->name('transactions.all');
+Route::post('/transaction/transfer', [TransactionController::class, 'transfer'])->name('transaction.transfer');
+Route::post('/transaction/withdraw', [TransactionController::class, 'withdraw'])->name('transaction.withdraw');
+Route::get('/transactions', [TransactionController::class, 'listTransactions'])->name('transactions.list');
 
