@@ -2,21 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeQrCodeMail;
 use App\Models\User;
-use App\Services\UserCardService;
+use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
 
-    protected $userCardService;
+    protected $qrCodeService;
 
-    public function __construct(UserCardService $userCardService)
+    public function __construct(QrCodeService $qrCodeService)
     {
-        $this->userCardService = $userCardService;
+        $this->qrCodeService = $qrCodeService;
     }
+
     public function createAccount(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -32,12 +35,12 @@ class UserController extends Controller
         }
 
         $user = User::where('phone_number', $request->phone_number)->first();
-
+        
         if (!$user->is_phone_verified) {
             return response()->json(['error' => 'Phone number not verified'], 400);
         }
 
-        // Mettre à jour les informations de l'utilisateur avec les données finales
+        // Mettre à jour les informations de base de l'utilisateur
         $user->update([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
@@ -45,9 +48,26 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $this->userCardService->sendUserCardByEmail($user);
+        // Générer les données pour le QR Code (vous pouvez personnaliser selon vos besoins)
+        $qrData = json_encode([
+            'user_id' => $user->id,
+            'name' => $user->first_name . ' ' . $user->last_name,
+            'phone' => $user->phone_number
+        ]);
 
-        return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
+        // Générer et uploader le QR Code
+        $qrCodeUrl = $this->qrCodeService->generateAndUploadQrCode($user->id, $qrData);
+        
+        // Mettre à jour l'URL du QR Code
+        $user->update(['qr_code_url' => $qrCodeUrl]);
+
+        // Envoyer l'email avec le QR Code
+        Mail::to($user->email)->send(new WelcomeQrCodeMail($user, $qrCodeUrl));
+
+        return response()->json([
+            'message' => 'Account created successfully', 
+            'user' => $user
+        ], 201);
     }
 
 
