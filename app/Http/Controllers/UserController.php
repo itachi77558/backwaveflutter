@@ -249,6 +249,22 @@ class UserController extends Controller
     }
 }
 
+
+public function checkContacts(Request $request)
+{
+    // Récupérer les contacts envoyés depuis Flutter
+    $contacts = $request->input('contacts'); // Supposons que les contacts sont envoyés sous forme de tableau de numéros de téléphone
+
+    // Vérifier quels contacts existent dans la base de données
+    $existingContacts = User::whereIn('phone_number', $contacts)->get(['id', 'phone_number', 'first_name', 'last_name']);
+
+    // Retourner les contacts trouvés sous forme de réponse JSON
+    return response()->json([
+        'existing_contacts' => $existingContacts
+    ]);
+}
+
+
 protected function getAndroidContacts()
 {
     // Cette fonction doit être implémentée côté Flutter pour renvoyer la liste des contacts Android vers Laravel

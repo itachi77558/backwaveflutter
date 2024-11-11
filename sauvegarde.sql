@@ -188,6 +188,46 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 
 --
+-- Name: transactions; Type: TABLE; Schema: public; Owner: pfdev31
+--
+
+CREATE TABLE public.transactions (
+    id bigint NOT NULL,
+    sender_id bigint NOT NULL,
+    receiver_id bigint,
+    phone_number character varying(255) NOT NULL,
+    transaction_type character varying(255) NOT NULL,
+    amount numeric(10,2) NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT transactions_transaction_type_check CHECK (((transaction_type)::text = ANY ((ARRAY['transfer'::character varying, 'withdrawal'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.transactions OWNER TO pfdev31;
+
+--
+-- Name: transactions_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
+--
+
+CREATE SEQUENCE public.transactions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.transactions_id_seq OWNER TO pfdev31;
+
+--
+-- Name: transactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
+--
+
+ALTER SEQUENCE public.transactions_id_seq OWNED BY public.transactions.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
@@ -294,6 +334,13 @@ ALTER TABLE ONLY public.personal_access_tokens ALTER COLUMN id SET DEFAULT nextv
 
 
 --
+-- Name: transactions id; Type: DEFAULT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.transactions ALTER COLUMN id SET DEFAULT nextval('public.transactions_id_seq'::regclass);
+
+
+--
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
@@ -328,13 +375,14 @@ COPY public.media (id, medially_type, medially_id, file_url, file_name, file_typ
 --
 
 COPY public.migrations (id, migration, batch) FROM stdin;
-8	2014_10_12_000000_create_users_table	1
-9	2014_10_12_100000_create_password_reset_tokens_table	1
-10	2019_08_19_000000_create_failed_jobs_table	1
-11	2019_12_14_000001_create_personal_access_tokens_table	1
-12	2020_06_14_000001_create_media_table	1
-13	2024_11_09_124739_create_verification_codes_table	1
-14	2024_11_10_153724_add_is_phone_verified_to_users_table	1
+1	2014_10_12_000000_create_users_table	1
+2	2014_10_12_100000_create_password_reset_tokens_table	1
+3	2019_08_19_000000_create_failed_jobs_table	1
+4	2019_12_14_000001_create_personal_access_tokens_table	1
+5	2020_06_14_000001_create_media_table	1
+6	2024_11_09_124739_create_verification_codes_table	1
+7	2024_11_10_153724_add_is_phone_verified_to_users_table	1
+8	2024_11_11_143951_create_transactions_table	1
 \.
 
 
@@ -351,6 +399,14 @@ COPY public.password_reset_tokens (email, token, created_at) FROM stdin;
 --
 
 COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, token, abilities, last_used_at, expires_at, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: pfdev31
+--
+
+COPY public.transactions (id, sender_id, receiver_id, phone_number, transaction_type, amount, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -388,7 +444,7 @@ SELECT pg_catalog.setval('public.media_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 14, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 8, true);
 
 
 --
@@ -396,6 +452,13 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 14, true);
 --
 
 SELECT pg_catalog.setval('public.personal_access_tokens_id_seq', 1, false);
+
+
+--
+-- Name: transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
+--
+
+SELECT pg_catalog.setval('public.transactions_id_seq', 1, false);
 
 
 --
@@ -469,6 +532,14 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
+-- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: users users_email_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
@@ -520,6 +591,22 @@ CREATE INDEX media_medially_type_medially_id_index ON public.media USING btree (
 --
 
 CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.personal_access_tokens USING btree (tokenable_type, tokenable_id);
+
+
+--
+-- Name: transactions transactions_receiver_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_receiver_id_foreign FOREIGN KEY (receiver_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: transactions transactions_sender_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_sender_id_foreign FOREIGN KEY (sender_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
