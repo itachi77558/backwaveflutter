@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('phone_number')->unique();
             $table->string('password')->nullable();
-
+            $table->string('qr_code_url')->nullable();
             $table->timestamps();
         });
     }
