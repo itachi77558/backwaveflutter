@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeQRCode;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,8 +12,8 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
-use App\Mail\WelcomeQrCode;
 use Illuminate\Support\Str;
+
 
 class UserController extends Controller
 {
@@ -108,7 +109,7 @@ class UserController extends Controller
         $user->save();
 
         // Envoyer l'email de bienvenue avec le QR code
-        Mail::to($user->email)->send(new WelcomeQrCode($user));
+        Mail::to($user->email)->send(new WelcomeQRCode($user));
 
         return response()->json([
             'message' => 'Account created successfully',

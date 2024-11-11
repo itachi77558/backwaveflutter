@@ -59,6 +59,46 @@ ALTER SEQUENCE public.failed_jobs_id_seq OWNED BY public.failed_jobs.id;
 
 
 --
+-- Name: media; Type: TABLE; Schema: public; Owner: pfdev31
+--
+
+CREATE TABLE public.media (
+    id bigint NOT NULL,
+    medially_type character varying(255) NOT NULL,
+    medially_id bigint NOT NULL,
+    file_url text NOT NULL,
+    file_name character varying(255) NOT NULL,
+    file_type character varying(255),
+    size bigint NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.media OWNER TO pfdev31;
+
+--
+-- Name: media_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
+--
+
+CREATE SEQUENCE public.media_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.media_id_seq OWNER TO pfdev31;
+
+--
+-- Name: media_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
+--
+
+ALTER SEQUENCE public.media_id_seq OWNED BY public.media.id;
+
+
+--
 -- Name: migrations; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
@@ -159,6 +199,7 @@ CREATE TABLE public.users (
     phone_number character varying(255) NOT NULL,
     password character varying(255),
     qr_code_url character varying(255),
+    unique_id uuid,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     is_phone_verified boolean DEFAULT false NOT NULL
@@ -232,6 +273,13 @@ ALTER TABLE ONLY public.failed_jobs ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: media id; Type: DEFAULT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.media ALTER COLUMN id SET DEFAULT nextval('public.media_id_seq'::regclass);
+
+
+--
 -- Name: migrations id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
@@ -268,16 +316,25 @@ COPY public.failed_jobs (id, uuid, connection, queue, payload, exception, failed
 
 
 --
+-- Data for Name: media; Type: TABLE DATA; Schema: public; Owner: pfdev31
+--
+
+COPY public.media (id, medially_type, medially_id, file_url, file_name, file_type, size, created_at, updated_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: migrations; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
 COPY public.migrations (id, migration, batch) FROM stdin;
-1	2014_10_12_000000_create_users_table	1
-2	2014_10_12_100000_create_password_reset_tokens_table	1
-3	2019_08_19_000000_create_failed_jobs_table	1
-4	2019_12_14_000001_create_personal_access_tokens_table	1
-5	2024_11_09_124739_create_verification_codes_table	1
-6	2024_11_10_153724_add_is_phone_verified_to_users_table	1
+8	2014_10_12_000000_create_users_table	1
+9	2014_10_12_100000_create_password_reset_tokens_table	1
+10	2019_08_19_000000_create_failed_jobs_table	1
+11	2019_12_14_000001_create_personal_access_tokens_table	1
+12	2020_06_14_000001_create_media_table	1
+13	2024_11_09_124739_create_verification_codes_table	1
+14	2024_11_10_153724_add_is_phone_verified_to_users_table	1
 \.
 
 
@@ -301,7 +358,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.users (id, first_name, last_name, email, phone_number, password, qr_code_url, created_at, updated_at, is_phone_verified) FROM stdin;
+COPY public.users (id, first_name, last_name, email, phone_number, password, qr_code_url, unique_id, created_at, updated_at, is_phone_verified) FROM stdin;
 \.
 
 
@@ -321,10 +378,17 @@ SELECT pg_catalog.setval('public.failed_jobs_id_seq', 1, false);
 
 
 --
+-- Name: media_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
+--
+
+SELECT pg_catalog.setval('public.media_id_seq', 1, false);
+
+
+--
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 6, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 14, true);
 
 
 --
@@ -362,6 +426,14 @@ ALTER TABLE ONLY public.failed_jobs
 
 ALTER TABLE ONLY public.failed_jobs
     ADD CONSTRAINT failed_jobs_uuid_unique UNIQUE (uuid);
+
+
+--
+-- Name: media media_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.media
+    ADD CONSTRAINT media_pkey PRIMARY KEY (id);
 
 
 --
@@ -421,11 +493,26 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: users users_unique_id_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_unique_id_unique UNIQUE (unique_id);
+
+
+--
 -- Name: verification_codes verification_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
 ALTER TABLE ONLY public.verification_codes
     ADD CONSTRAINT verification_codes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: media_medially_type_medially_id_index; Type: INDEX; Schema: public; Owner: pfdev31
+--
+
+CREATE INDEX media_medially_type_medially_id_index ON public.media USING btree (medially_type, medially_id);
 
 
 --

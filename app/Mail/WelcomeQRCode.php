@@ -7,7 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeQrCode extends Mailable
+class WelcomeQRCode extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -20,7 +20,9 @@ class WelcomeQrCode extends Mailable
 
     public function build()
     {
-        return $this->view('emails.welcome-qr')
-                    ->subject('Bienvenue - Votre QR Code Personnel');
+        return $this->view('emails.welcome-qrcode')
+            ->subject('Bienvenue - Votre QR Code Personnel');
+
+
     }
 }
