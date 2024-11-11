@@ -193,14 +193,13 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 CREATE TABLE public.transactions (
     id bigint NOT NULL,
+    type character varying(255) NOT NULL,
     sender_id bigint NOT NULL,
     receiver_id bigint,
-    phone_number character varying(255) NOT NULL,
-    transaction_type character varying(255) NOT NULL,
-    amount numeric(10,2) NOT NULL,
+    amount numeric(15,2) NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    CONSTRAINT transactions_transaction_type_check CHECK (((transaction_type)::text = ANY ((ARRAY['transfer'::character varying, 'withdrawal'::character varying])::text[])))
+    CONSTRAINT transactions_type_check CHECK (((type)::text = ANY ((ARRAY['transfer'::character varying, 'withdraw'::character varying])::text[])))
 );
 
 
@@ -382,7 +381,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 5	2020_06_14_000001_create_media_table	1
 6	2024_11_09_124739_create_verification_codes_table	1
 7	2024_11_10_153724_add_is_phone_verified_to_users_table	1
-8	2024_11_11_143951_create_transactions_table	1
+8	2024_11_11_152308_create_transactions_table	1
 \.
 
 
@@ -406,7 +405,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.transactions (id, sender_id, receiver_id, phone_number, transaction_type, amount, created_at, updated_at) FROM stdin;
+COPY public.transactions (id, type, sender_id, receiver_id, amount, created_at, updated_at) FROM stdin;
 \.
 
 

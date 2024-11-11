@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('qr_code_url')->nullable();
             $table->uuid('unique_id')->nullable()->unique();
+            $table->decimal('balance', 15, 2)->default(0.00); // Champ pour le solde initial à 0.00
             $table->timestamps();
         });
     }
