@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\WelcomeQRCode;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -209,4 +210,49 @@ class UserController extends Controller
             'user' => $user
         ], 201);
     }
+
+
+    public function sendTransaction(Request $request)
+{
+    $request->validate([
+        'sender_id' => 'required|exists:users,id',
+        'phone_number' => 'required|string',
+        'transaction_type' => 'required|in:transfer,withdrawal',
+        'amount' => 'required|numeric|min:0.01',
+    ]);
+
+    $sender = User::find($request->sender_id);
+    $receiver = User::where('phone_number', $request->phone_number)->first();
+
+    // Si le receiver existe dans la base de données
+    if ($receiver) {
+        // Enregistrement de la transaction
+        $transaction = Transaction::create([
+            'sender_id' => $sender->id,
+            'receiver_id' => $receiver->id,
+            'phone_number' => $request->phone_number,
+            'transaction_type' => $request->transaction_type,
+            'amount' => $request->amount,
+        ]);
+
+        // Vérification des contacts locaux via Flutter (intégration côté app Flutter)
+        // Envoie une réponse à Flutter pour l'inviter à enregistrer le contact si ce n'est pas déjà fait
+        return response()->json([
+            'message' => 'Transaction successful',
+            'transaction' => $transaction,
+            'add_to_contacts' => !in_array($receiver->phone_number, $this->getAndroidContacts())
+        ]);
+
+    } else {
+        // Transaction refusée si le contact n'existe pas
+        return response()->json(['error' => 'Receiver not found in the system'], 400);
+    }
+}
+
+protected function getAndroidContacts()
+{
+    // Cette fonction doit être implémentée côté Flutter pour renvoyer la liste des contacts Android vers Laravel
+    return [];
+}
+
 }

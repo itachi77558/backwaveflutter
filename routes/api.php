@@ -27,3 +27,8 @@ Route::post('/create-account', [UserController::class, 'createAccount']);
 Route::post('/login', [UserController::class, 'login']);
 
 
+
+
+Route::post('/transaction/send', [UserController::class, 'sendTransaction'])->name('transaction.send');
+
+Route::post('/contacts/check', [UserController::class, 'checkContacts'])->name('contacts.check');
