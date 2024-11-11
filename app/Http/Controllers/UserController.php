@@ -271,4 +271,16 @@ protected function getAndroidContacts()
     return [];
 }
 
+
+public function getAllTransactions()
+{
+    // Récupère toutes les transactions, incluant les informations de l'expéditeur et du destinataire
+    $transactions = Transaction::with(['sender', 'receiver'])->get();
+
+    return response()->json([
+        'transactions' => $transactions
+    ]);
+}
+
+
 }
