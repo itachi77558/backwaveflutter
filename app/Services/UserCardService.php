@@ -7,6 +7,7 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class UserCardService
 {
@@ -20,16 +21,14 @@ class UserCardService
             ->margin(10)
             ->build();
 
-        // Enregistrement en mémoire pour l'upload vers Cloudinary
-        $qrCodeData = $qrCode->getString();
-
-        // Upload directement vers Cloudinary
+        // Utilisation de Cloudinary en passant le contenu binaire du QR code
         $uploadResult = Cloudinary::upload(
-            $qrCodeData, 
+            $qrCode->getString(),
             [
                 'folder' => 'user_qrcodes',
                 'public_id' => "user_{$user->id}_qrcode",
-                'resource_type' => 'image'
+                'resource_type' => 'image',
+                'format' => 'png' // Assurez-vous que le fichier est reconnu en tant qu'image
             ]
         );
 
@@ -54,10 +53,10 @@ class UserCardService
         ])->render();
 
         // Envoi de l'email avec la carte et le QR code
-        Mail::send([], [], function($message) use ($user, $htmlContent) {
+        Mail::send([], [], function ($message) use ($user, $htmlContent) {
             $message->to($user->email, $user->first_name)
-                    ->subject('Welcome to Our Service')
-                    ->setBody($htmlContent, 'text/html');
+                ->subject('Welcome to Our Service')
+                ->setBody($htmlContent, 'text/html');
         });
     }
 }
