@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('phone_number')->unique();
             $table->string('password')->nullable();
             $table->string('qr_code_url')->nullable();
+            $table->uuid('unique_id')->nullable()->unique();
             $table->timestamps();
         });
     }

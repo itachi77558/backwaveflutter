@@ -12,6 +12,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Cloudinary\Configuration\Configuration;
 use Cloudinary\Api\Upload\UploadApi;
 use App\Mail\WelcomeQrCode;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -30,10 +31,20 @@ class UserController extends Controller
         ]);
     }
 
-    private function generateAndUploadQrCode($userId)
+    private function generateAndUploadQrCode($user)
     {
+        // Générer un identifiant unique pour l'utilisateur s'il n'en a pas
+        $uniqueId = $user->unique_id ?? Str::uuid();
+        
+        // Créer le contenu du QR Code (vous pouvez personnaliser selon vos besoins)
+        $qrContent = json_encode([
+            'user_id' => $user->id,
+            'unique_id' => $uniqueId,
+            'name' => $user->first_name . ' ' . $user->last_name
+        ]);
+
         // Génération du QR Code
-        $qrCode = QrCode::create(route('user.profile', $userId))
+        $qrCode = QrCode::create($qrContent)
             ->setSize(300)
             ->setMargin(10);
 
@@ -41,18 +52,24 @@ class UserController extends Controller
         $result = $writer->write($qrCode);
         
         // Sauvegarde temporaire du QR Code
-        $tempPath = sys_get_temp_dir() . '/qr-' . $userId . '.png';
+        $tempPath = sys_get_temp_dir() . '/qr-' . $user->id . '.png';
         $result->saveToFile($tempPath);
 
         // Upload vers Cloudinary
         $uploadApi = new UploadApi();
         $result = $uploadApi->upload($tempPath, [
             'folder' => 'qrcodes',
-            'public_id' => 'user-' . $userId,
+            'public_id' => 'user-' . $user->id,
         ]);
 
         // Suppression du fichier temporaire
         unlink($tempPath);
+
+        // Mettre à jour l'identifiant unique de l'utilisateur si nécessaire
+        if (!$user->unique_id) {
+            $user->unique_id = $uniqueId;
+            $user->save();
+        }
 
         return $result['secure_url'];
     }
@@ -77,17 +94,18 @@ class UserController extends Controller
             return response()->json(['error' => 'Phone number not verified'], 400);
         }
 
-        // Générer et uploader le QR code
-        $qrCodeUrl = $this->generateAndUploadQrCode($user->id);
-
         // Mettre à jour les informations de l'utilisateur
         $user->update([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'qr_code_url' => $qrCodeUrl,
         ]);
+
+        // Générer et uploader le QR code
+        $qrCodeUrl = $this->generateAndUploadQrCode($user);
+        $user->qr_code_url = $qrCodeUrl;
+        $user->save();
 
         // Envoyer l'email de bienvenue avec le QR code
         Mail::to($user->email)->send(new WelcomeQrCode($user));
