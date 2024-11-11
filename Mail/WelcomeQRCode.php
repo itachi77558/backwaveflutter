@@ -2,25 +2,25 @@
 
 namespace App\Mail;
 
+use App\Models\User;
+use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeQrCodeMail extends Mailable
+class WelcomeQrCode extends Mailable
 {
-    use SerializesModels;
+    use Queueable, SerializesModels;
 
     public $user;
-    public $qrCodeUrl;
 
-    public function __construct($user, $qrCodeUrl)
+    public function __construct(User $user)
     {
         $this->user = $user;
-        $this->qrCodeUrl = $qrCodeUrl;
     }
 
     public function build()
     {
-        return $this->view('emails.welcome-qrcode')
+        return $this->view('emails.welcome-qr')
                     ->subject('Bienvenue - Votre QR Code Personnel');
     }
 }
