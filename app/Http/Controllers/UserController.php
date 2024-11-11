@@ -32,6 +32,99 @@ class UserController extends Controller
         ]);
     }
 
+
+    public function login(Request $request)
+    {
+        // Validation des informations d'identification
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        // Récupération de l'utilisateur
+        $user = User::where('email', $request->email)->first();
+
+        // Vérification des identifiants
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'error' => 'Les identifiants sont incorrects'
+            ], 401);
+        }
+
+        // Vérification si le numéro de téléphone est vérifié
+        if (!$user->is_phone_verified) {
+            return response()->json([
+                'error' => 'Le numéro de téléphone n\'est pas vérifié',
+                'needs_verification' => true
+            ], 403);
+        }
+
+        // Supprimer les anciens tokens (optionnel - pour la sécurité)
+        $user->tokens()->delete();
+
+        // Création d'un nouveau token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Préparer les données utilisateur à retourner
+        $userData = [
+            'id' => $user->id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'phone_number' => $user->phone_number,
+            'qr_code_url' => $user->qr_code_url,
+        ];
+
+        // Retourner la réponse avec le token et les données utilisateur
+        return response()->json([
+            'message' => 'Connexion réussie',
+            'user' => $userData,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ], 200);
+    }
+
+
+
+
+
+
+
+
+
+/*
+    public function login(Request $request)
+    {
+        // Validation des informations d'identification
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        // Récupération de l'utilisateur
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        // Création d'un token pour l'utilisateur (avec Laravel Sanctum par exemple)
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Retourner la réponse avec le token
+        return response()->json([
+            'message' => 'Login successful',
+            'access_token' => $token,:
+            'token_type' => 'Bearer',
+        ], 200);
+    }
+
+    */
+
     private function generateAndUploadQrCode($user)
     {
         // Générer un identifiant unique pour l'utilisateur s'il n'en a pas
