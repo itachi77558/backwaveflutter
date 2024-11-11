@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    protected $userCardService;
 
+    protected $userCardService;
 
     public function __construct(UserCardService $userCardService)
     {
@@ -46,7 +46,6 @@ class UserController extends Controller
         ]);
 
         $this->userCardService->sendUserCardByEmail($user);
-
 
         return response()->json(['message' => 'Account created successfully', 'user' => $user], 201);
     }
