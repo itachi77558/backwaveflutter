@@ -29,9 +29,13 @@ Route::post('/login', [UserController::class, 'login']);
 
 
 
+//Route::post('/transaction/withdraw', [TransactionController::class, 'withdraw'])->name('transaction.withdraw');
 
-Route::post('/contacts/check', [UserController::class, 'checkContacts'])->name('contacts.check');
-Route::post('/transaction/transfer', [TransactionController::class, 'transfer'])->name('transaction.transfer');
-Route::post('/transaction/withdraw', [TransactionController::class, 'withdraw'])->name('transaction.withdraw');
-Route::get('/transactions', [TransactionController::class, 'listTransactions'])->name('transactions.list');
+//Route::post('/contacts/check', [UserController::class, 'checkContacts'])->name('contacts.check');
+//Route::post('/transaction/transfer', [TransactionController::class, 'transfer'])->name('transaction.transfer');
+//Route::get('/transactions', [TransactionController::class, 'listTransactions'])->name('transactions.list');
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/transfer', [UserController::class, 'transfer'])->name('transfer');
+});
 

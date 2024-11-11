@@ -42,21 +42,21 @@ class UserController extends Controller
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
-
+    
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
-
+    
         // Récupération de l'utilisateur
         $user = User::where('email', $request->email)->first();
-
+    
         // Vérification des identifiants
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'error' => 'Les identifiants sont incorrects'
             ], 401);
         }
-
+    
         // Vérification si le numéro de téléphone est vérifié
         if (!$user->is_phone_verified) {
             return response()->json([
@@ -64,13 +64,13 @@ class UserController extends Controller
                 'needs_verification' => true
             ], 403);
         }
-
+    
         // Supprimer les anciens tokens (optionnel - pour la sécurité)
         $user->tokens()->delete();
-
+    
         // Création d'un nouveau token
         $token = $user->createToken('auth_token')->plainTextToken;
-
+    
         // Préparer les données utilisateur à retourner
         $userData = [
             'id' => $user->id,
@@ -80,7 +80,7 @@ class UserController extends Controller
             'phone_number' => $user->phone_number,
             'qr_code_url' => $user->qr_code_url,
         ];
-
+    
         // Retourner la réponse avec le token et les données utilisateur
         return response()->json([
             'message' => 'Connexion réussie',
@@ -89,8 +89,10 @@ class UserController extends Controller
             'token_type' => 'Bearer',
         ], 200);
     }
+    
 
 
+    
 
 
 

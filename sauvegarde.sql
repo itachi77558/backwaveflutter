@@ -239,6 +239,7 @@ CREATE TABLE public.users (
     password character varying(255),
     qr_code_url character varying(255),
     unique_id uuid,
+    balance numeric(15,2) DEFAULT '0'::numeric NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     is_phone_verified boolean DEFAULT false NOT NULL
@@ -413,7 +414,7 @@ COPY public.transactions (id, type, sender_id, receiver_id, amount, created_at, 
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.users (id, first_name, last_name, email, phone_number, password, qr_code_url, unique_id, created_at, updated_at, is_phone_verified) FROM stdin;
+COPY public.users (id, first_name, last_name, email, phone_number, password, qr_code_url, unique_id, balance, created_at, updated_at, is_phone_verified) FROM stdin;
 \.
 
 
