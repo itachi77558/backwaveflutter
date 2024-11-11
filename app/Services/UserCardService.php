@@ -11,33 +11,37 @@ use Illuminate\Support\Facades\Mail;
 class UserCardService
 {
     public function generateAndUploadQrCode(User $user)
-    {
-        // Génération du QR code
-        $qrCode = Builder::create()
-            ->writer(new PngWriter())
-            ->data("User ID: {$user->id}")
-            ->size(150)
-            ->margin(10)
-            ->build();
+{
+    // Génération du QR code en tant que chaîne de caractères en base64 sans stockage local
+    $qrCode = Builder::create()
+        ->writer(new PngWriter())
+        ->data("User ID: {$user->id}")
+        ->size(150)
+        ->margin(10)
+        ->build();
 
-        // Sauvegarde temporaire du QR code pour l'upload vers Cloudinary
-        $tempQrCodePath = storage_path("app/public/qrcodes/{$user->id}_qrcode.png");
-        file_put_contents($tempQrCodePath, $qrCode->getString());
+    $qrCodeData = $qrCode->getString(); // Obtenir le contenu du QR code en tant que chaîne
 
-        // Upload vers Cloudinary
-        $uploadResult = Cloudinary::upload($tempQrCodePath, [
+    // Upload direct sur Cloudinary
+    $uploadResult = Cloudinary::upload(
+        'data:image/png;base64,' . base64_encode($qrCodeData),  // Conversion du contenu en base64 pour l’upload direct
+        [
             'folder' => 'user_qrcodes',
-            'public_id' => "user_{$user->id}_qrcode"
-        ]);
+            'public_id' => "user_{$user->id}_qrcode",
+            'overwrite' => true,
+            'resource_type' => 'image',
+        ]
+    );
 
-        // Récupération de l'URL du QR code
-        $qrCodeUrl = $uploadResult->getSecurePath();
+    // Récupération de l'URL du QR code stocké
+    $qrCodeUrl = $uploadResult->getSecurePath();
 
-        // Enregistrement de l'URL dans la base de données
-        $user->update(['qr_code_url' => $qrCodeUrl]);
+    // Enregistrement de l'URL dans la colonne `qr_code_url` de l’utilisateur
+    $user->update(['qr_code_url' => $qrCodeUrl]);
 
-        return $qrCodeUrl;
-    }
+    return $qrCodeUrl;
+}
+
 
     public function sendUserCardByEmail(User $user)
     {
