@@ -50,7 +50,9 @@ $kernel = $app->make(Kernel::class);
 
 $response = $kernel->handle(
     $request = Request::capture()
-)->send();
+);
+
+$response->send();
 
 $kernel->terminate($request, $response);
 
@@ -62,7 +64,8 @@ $app->bind('Illuminate\Http\Request', function () use ($port) {
 
 // Démarrer le serveur intégré de PHP sur le port spécifié
 if (php_sapi_name() === 'cli-server') {
-    $app->run();
+    // Le serveur intégré de PHP ne nécessite pas d'appel à $app->run()
+    // Il gère automatiquement les requêtes HTTP
 } else {
-    $app->run($app['request']);
+    // Pour les autres environnements, vous pouvez utiliser un serveur web comme Apache ou Nginx
 }
