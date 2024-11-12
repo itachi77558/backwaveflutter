@@ -137,27 +137,6 @@ class UserController extends Controller
     ], 201);
 }
 
-    
-
-
-public function profile(Request $request)
-{
-    $user = $request->user();
-
-    return response()->json([
-        'id' => $user->id,
-        'first_name' => $user->first_name,
-        'last_name' => $user->last_name,
-        'email' => $user->email,
-        'phone_number' => $user->phone_number,
-        'qr_code_url' => $user->qr_code_url,
-        'balance' => $user->balance,
-    ], 200, [], JSON_UNESCAPED_UNICODE); // Réponse JSON propre
-}
-
-
-
-
 
 
 
@@ -303,6 +282,23 @@ public function profile(Request $request)
         $contacts = User::whereIn('phone_number', $request->phone_numbers)
                         ->get(['id', 'phone_number', 'first_name', 'last_name']);
         return response()->json($contacts);
+    }
+
+
+    public function getProfile(Request $request)
+    {
+        $user = $request->user();
+    
+        return response()->json([
+            'id' => $user->id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'phone_number' => $user->phone_number,
+            'qr_code_url' => $user->qr_code_url,
+            'balance' => $user->balance,
+            // Ajoutez d'autres informations selon vos besoins
+        ]);
     }
 
 
