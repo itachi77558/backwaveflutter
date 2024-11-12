@@ -285,7 +285,7 @@ class UserController extends Controller
     }
 
 
-    public function profile(Request $request)
+    public function getProfile(Request $request)
 {
     $user = $request->user();
 
