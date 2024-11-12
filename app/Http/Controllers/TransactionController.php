@@ -83,8 +83,6 @@ class TransactionController extends Controller
         return response()->json(['message' => 'Withdrawal successful'], 200);
     }
 
-    */
-
     // Lister toutes les transactions
     public function listTransactions(Request $request)
     {
@@ -94,5 +92,5 @@ class TransactionController extends Controller
                                    ->get();
 
         return response()->json($transactions);
-    }
+    }*/
 }

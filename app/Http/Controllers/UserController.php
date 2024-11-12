@@ -35,20 +35,7 @@ class UserController extends Controller
     }
 
 
-    public function profile(Request $request)
-{
-    $user = $request->user();
-
-    return response()->json([
-        'id' => $user->id,
-        'first_name' => $user->first_name,
-        'last_name' => $user->last_name,
-        'email' => $user->email,
-        'phone_number' => $user->phone_number,
-        'qr_code_url' => $user->qr_code_url,
-        'balance' => $user->balance,
-    ], 200, [], JSON_UNESCAPED_UNICODE); // Réponse JSON propre
-}
+  
 
 
 
@@ -153,7 +140,20 @@ class UserController extends Controller
     
 
 
-    
+public function profile(Request $request)
+{
+    $user = $request->user();
+
+    return response()->json([
+        'id' => $user->id,
+        'first_name' => $user->first_name,
+        'last_name' => $user->last_name,
+        'email' => $user->email,
+        'phone_number' => $user->phone_number,
+        'qr_code_url' => $user->qr_code_url,
+        'balance' => $user->balance,
+    ], 200, [], JSON_UNESCAPED_UNICODE); // Réponse JSON propre
+}
 
 
 
