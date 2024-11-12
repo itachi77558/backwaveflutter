@@ -23,6 +23,6 @@ Route::post('/create-account', [UserController::class, 'createAccount']);
 Route::post('/login', [UserController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', [UserController::class, 'getProfile']);
     Route::post('/transfer', [UserController::class, 'transfer'])->name('transfer');
+    Route::get('/profile', [UserController::class, 'getProfile']);  
 });
