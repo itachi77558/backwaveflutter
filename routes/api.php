@@ -27,5 +27,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [UserController::class, 'getProfile']);  
     Route::post('/checkcontact', [UserController::class, 'checkContacts']);
     Route::post('/multiple-transfer', [TransactionController::class, 'multipleTransfer']); 
-
+    Route::get('/list-transaction', [UserController::class, 'listTransactions']);  
 });

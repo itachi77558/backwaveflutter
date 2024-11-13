@@ -194,11 +194,13 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 CREATE TABLE public.transactions (
     id bigint NOT NULL,
     type character varying(255) NOT NULL,
+    direction character varying(255) DEFAULT 'sent'::character varying NOT NULL,
     sender_id bigint NOT NULL,
     receiver_id bigint,
     amount numeric(15,2) NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
+    CONSTRAINT transactions_direction_check CHECK (((direction)::text = ANY ((ARRAY['sent'::character varying, 'received'::character varying])::text[]))),
     CONSTRAINT transactions_type_check CHECK (((type)::text = ANY ((ARRAY['transfer'::character varying, 'withdraw'::character varying])::text[])))
 );
 
@@ -375,14 +377,14 @@ COPY public.media (id, medially_type, medially_id, file_url, file_name, file_typ
 --
 
 COPY public.migrations (id, migration, batch) FROM stdin;
-1	2014_10_12_000000_create_users_table	1
-2	2014_10_12_100000_create_password_reset_tokens_table	1
-3	2019_08_19_000000_create_failed_jobs_table	1
-4	2019_12_14_000001_create_personal_access_tokens_table	1
-5	2020_06_14_000001_create_media_table	1
-6	2024_11_09_124739_create_verification_codes_table	1
-7	2024_11_10_153724_add_is_phone_verified_to_users_table	1
-8	2024_11_11_152308_create_transactions_table	1
+9	2014_10_12_000000_create_users_table	1
+10	2014_10_12_100000_create_password_reset_tokens_table	1
+11	2019_08_19_000000_create_failed_jobs_table	1
+12	2019_12_14_000001_create_personal_access_tokens_table	1
+13	2020_06_14_000001_create_media_table	1
+14	2024_11_09_124739_create_verification_codes_table	1
+15	2024_11_10_153724_add_is_phone_verified_to_users_table	1
+16	2024_11_11_152308_create_transactions_table	1
 \.
 
 
@@ -406,7 +408,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.transactions (id, type, sender_id, receiver_id, amount, created_at, updated_at) FROM stdin;
+COPY public.transactions (id, type, direction, sender_id, receiver_id, amount, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -444,7 +446,7 @@ SELECT pg_catalog.setval('public.media_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 8, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 16, true);
 
 
 --

@@ -180,4 +180,36 @@ class TransactionController extends Controller
 
         return response()->json($transactions);
     }*/
+
+
+
+    public function listTransactions(Request $request)
+{
+    $user = auth()->user(); // Authenticated user is the one we retrieve transactions for
+
+    // Get transactions where the user is the sender or receiver
+    $transactions = Transaction::where(function ($query) use ($user) {
+                                $query->where('sender_id', $user->id)
+                                      ->orWhere('receiver_id', $user->id);
+                            })
+                            ->orderBy('created_at', 'desc')
+                            ->get()
+                            ->map(function ($transaction) use ($user) {
+                                return [
+                                    'type' => $transaction->type,
+                                    'amount' => $transaction->amount,
+                                    'direction' => $transaction->sender_id === $user->id ? 'sent' : 'received',
+                                    'other_party' => $transaction->sender_id === $user->id 
+                                                        ? User::find($transaction->receiver_id)->phone_number ?? 'External'
+                                                        : User::find($transaction->sender_id)->phone_number ?? 'External',
+                                    'date' => $transaction->created_at->format('d M Y'),
+                                ];
+                            });
+
+    return response()->json(['transactions' => $transactions], 200);
+}
+
+
+
+
 }
