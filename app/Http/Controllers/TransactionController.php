@@ -14,8 +14,7 @@ class TransactionController extends Controller
     public function transfer(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'sender_id' => 'required|exists:users,id',
-            'receiver_phone' => 'required|exists:users,phone_number',
+            'receiver_phone_number' => 'required|exists:users,phone_number',
             'amount' => 'required|numeric|min:1',
         ]);
 
@@ -23,25 +22,43 @@ class TransactionController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        $sender = User::find($request->sender_id);
-        $receiver = User::where('phone_number', $request->receiver_phone)->first();
+        $sender = auth()->user(); // Authenticated user is the sender
+        $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
 
+        // Prevent transferring to oneself
+        if ($sender->id === $receiver->id) {
+            return response()->json(['error' => 'You cannot transfer money to yourself'], 400);
+        }
+
+        // Check if the sender has sufficient balance
         if ($sender->balance < $request->amount) {
             return response()->json(['error' => 'Insufficient balance'], 400);
         }
 
         DB::transaction(function () use ($sender, $receiver, $request) {
+            // Deduct amount from sender and add to receiver
             $sender->balance -= $request->amount;
             $sender->save();
 
             $receiver->balance += $request->amount;
             $receiver->save();
 
+            // Record "sent" transaction for the sender
             Transaction::create([
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
+                'direction' => 'sent', // Indicates the sender side of the transaction
+            ]);
+
+            // Record "received" transaction for the receiver
+            Transaction::create([
+                'type' => 'transfer',
+                'sender_id' => $sender->id,
+                'receiver_id' => $receiver->id,
+                'amount' => $request->amount,
+                'direction' => 'received', // Indicates the receiver side of the transaction
             ]);
         });
 
@@ -52,67 +69,68 @@ class TransactionController extends Controller
     // In TransactionController.php
 
     public function multipleTransfer(Request $request)
-{
-    // Valider la structure de la requête
-    $validator = Validator::make($request->all(), [
-        'transfers' => 'required|array|min:1',
-        'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
-        'transfers.*.amount' => 'required|numeric|min:1',
-    ]);
+    {
+        // Validate each transfer in the list
+        $validator = Validator::make($request->all(), [
+            'transfers' => 'required|array|min:1',
+            'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
+            'transfers.*.amount' => 'required|numeric|min:1',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json(['error' => $validator->errors()], 400);
-    }
-
-    $sender = auth()->user(); // Utilisateur connecté
-    $totalAmount = array_sum(array_column($request->transfers, 'amount'));
-
-    // Vérification du solde suffisant
-    if ($sender->balance < $totalAmount) {
-        return response()->json(['error' => 'Insufficient balance for multiple transfers'], 400);
-    }
-
-    // Vérifier que l'utilisateur ne s'envoie pas d'argent à lui-même
-    foreach ($request->transfers as $transfer) {
-        if ($transfer['receiver_phone'] === $sender->phone_number) {
-            return response()->json([
-                'error' => 'You cannot transfer money to yourself'
-            ], 400);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
         }
-    }
 
-    // Vérifier qu'il n'y a pas de doublons dans les numéros de téléphone des destinataires
-    $uniquePhoneNumbers = array_unique(array_column($request->transfers, 'receiver_phone'));
-    if (count($uniquePhoneNumbers) < count($request->transfers)) {
-        return response()->json([
-            'error' => 'Duplicate transfers to the same recipient are not allowed'
-        ], 400);
-    }
+        $sender = auth()->user();
+        $totalAmount = array_sum(array_column($request->transfers, 'amount'));
 
-    // Effectuer le transfert multiple dans une transaction
-    DB::transaction(function () use ($sender, $request) {
-        foreach ($request->transfers as $transfer) {
-            $receiver = User::where('phone_number', $transfer['receiver_phone'])->first();
-
-            // Déduire le montant de l'expéditeur et créditer le destinataire
-            $sender->balance -= $transfer['amount'];
-            $sender->save();
-
-            $receiver->balance += $transfer['amount'];
-            $receiver->save();
-
-            // Enregistrer chaque transaction
-            Transaction::create([
-                'type' => 'transfer',
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $transfer['amount'],
-            ]);
+        // Check if the sender has enough balance for all transfers
+        if ($sender->balance < $totalAmount) {
+            return response()->json(['error' => 'Insufficient balance for multiple transfers'], 400);
         }
-    });
 
-    return response()->json(['message' => 'Multiple transfer successful'], 200);
-}
+        // Ensure no self-transfers and no duplicate recipients
+        $recipientPhones = array_column($request->transfers, 'receiver_phone');
+        if (in_array($sender->phone_number, $recipientPhones)) {
+            return response()->json(['error' => 'You cannot transfer money to yourself'], 400);
+        }
+        if (count($recipientPhones) !== count(array_unique($recipientPhones))) {
+            return response()->json(['error' => 'Duplicate transfers to the same recipient are not allowed'], 400);
+        }
+
+        DB::transaction(function () use ($sender, $request) {
+            foreach ($request->transfers as $transfer) {
+                $receiver = User::where('phone_number', $transfer['receiver_phone'])->first();
+
+                // Deduct amount from sender and add to receiver
+                $sender->balance -= $transfer['amount'];
+                $sender->save();
+
+                $receiver->balance += $transfer['amount'];
+                $receiver->save();
+
+                // Record "sent" transaction for the sender
+                Transaction::create([
+                    'type' => 'transfer',
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'amount' => $transfer['amount'],
+                    'direction' => 'sent',
+                ]);
+
+                // Record "received" transaction for the receiver
+                Transaction::create([
+                    'type' => 'transfer',
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'amount' => $transfer['amount'],
+                    'direction' => 'received',
+                ]);
+            }
+        });
+
+        return response()->json(['message' => 'Multiple transfers successful'], 200);
+    }
 
     
 
