@@ -25,4 +25,6 @@ Route::post('/login', [UserController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/transfer', [UserController::class, 'transfer'])->name('transfer');
     Route::get('/profile', [UserController::class, 'getProfile']);  
+    Route::post('/checkcontact', [UserController::class, 'checkContacts']);
+
 });
