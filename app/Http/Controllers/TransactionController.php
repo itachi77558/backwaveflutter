@@ -51,52 +51,52 @@ class TransactionController extends Controller
 
     // In TransactionController.php
 
-public function multipleTransfer(Request $request)
-{
-    // Validate the input
-    $validator = Validator::make($request->all(), [
-        'sender_id' => 'required|exists:users,id',
-        'transfers' => 'required|array|min:1',
-        'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
-        'transfers.*.amount' => 'required|numeric|min:1',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['error' => $validator->errors()], 400);
-    }
-
-    $sender = User::find($request->sender_id);
-    $totalAmount = array_sum(array_column($request->transfers, 'amount'));
-
-    // Check if sender has enough balance for the total transfer amount
-    if ($sender->balance < $totalAmount) {
-        return response()->json(['error' => 'Insufficient balance for multiple transfers'], 400);
-    }
-
-    // Process transfers within a transaction for atomicity
-    DB::transaction(function () use ($sender, $request) {
-        foreach ($request->transfers as $transfer) {
-            $receiver = User::where('phone_number', $transfer['receiver_phone'])->first();
-            
-            // Deduct from sender and add to receiver
-            $sender->balance -= $transfer['amount'];
-            $sender->save();
-
-            $receiver->balance += $transfer['amount'];
-            $receiver->save();
-
-            // Record the transaction
-            Transaction::create([
-                'type' => 'transfer',
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $transfer['amount'],
-            ]);
+    public function multipleTransfer(Request $request)
+    {
+        // Validation de la requête
+        $validator = Validator::make($request->all(), [
+            'transfers' => 'required|array|min:1',
+            'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
+            'transfers.*.amount' => 'required|numeric|min:1',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
         }
-    });
-
-    return response()->json(['message' => 'Multiple transfer successful'], 200);
-}
+    
+        $sender = auth()->user(); // Utiliser l'utilisateur authentifié
+        $totalAmount = array_sum(array_column($request->transfers, 'amount'));
+    
+        // Vérification du solde
+        if ($sender->balance < $totalAmount) {
+            return response()->json(['error' => 'Insufficient balance for multiple transfers'], 400);
+        }
+    
+        // Traiter chaque transfert dans une transaction
+        DB::transaction(function () use ($sender, $request) {
+            foreach ($request->transfers as $transfer) {
+                $receiver = User::where('phone_number', $transfer['receiver_phone'])->first();
+    
+                // Déduire du solde de l'expéditeur et ajouter au destinataire
+                $sender->balance -= $transfer['amount'];
+                $sender->save();
+    
+                $receiver->balance += $transfer['amount'];
+                $receiver->save();
+    
+                // Enregistrer la transaction
+                Transaction::create([
+                    'type' => 'transfer',
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'amount' => $transfer['amount'],
+                ]);
+            }
+        });
+    
+        return response()->json(['message' => 'Multiple transfer successful'], 200);
+    }
+    
 
 
     // Effectuer un retrait pour l'utilisateur
