@@ -185,37 +185,45 @@ class TransactionController extends Controller
 
     public function listTransactions(Request $request)
 {
-    // Get the authenticated user
+    // Récupérer l'utilisateur authentifié
     $user = auth()->user();
 
-    // Check if the user exists and retrieve related transactions
+    // Vérifier si l'utilisateur est authentifié
     if (!$user) {
-        return response()->json(['error' => 'User not authenticated'], 401);
+        return response()->json(['error' => 'Utilisateur non authentifié'], 401);
     }
 
+    // Récupérer les transactions où l'utilisateur est soit l'expéditeur, soit le destinataire
     $transactions = Transaction::where('sender_id', $user->id)
                         ->orWhere('receiver_id', $user->id)
                         ->orderBy('created_at', 'desc')
                         ->get()
                         ->map(function ($transaction) use ($user) {
+                            // Déterminer la direction de la transaction
+                            $isSent = $transaction->sender_id === $user->id;
+                            $otherUserId = $isSent ? $transaction->receiver_id : $transaction->sender_id;
+                            $otherUser = User::find($otherUserId);
+
                             return [
                                 'type' => $transaction->type,
                                 'amount' => $transaction->amount,
-                                'direction' => $transaction->sender_id === $user->id ? 'sent' : 'received',
-                                'other_party' => $transaction->sender_id === $user->id 
-                                    ? optional(User::find($transaction->receiver_id))->phone_number ?? 'External'
-                                    : optional(User::find($transaction->sender_id))->phone_number ?? 'External',
+                                'direction' => $isSent ? 'sent' : 'received',
+                                'other_party' => [
+                                    'phone_number' => optional($otherUser)->phone_number ?? 'Externe',
+                                    'name' => optional($otherUser)->first_name . ' ' . optional($otherUser)->last_name ?? 'Externe'
+                                ],
                                 'date' => $transaction->created_at->format('d M Y'),
                             ];
                         });
 
-    // Check if transactions were found
+    // Vérifier si des transactions ont été trouvées
     if ($transactions->isEmpty()) {
-        return response()->json(['message' => 'No transactions found'], 200);
+        return response()->json(['message' => 'Aucune transaction trouvée'], 200);
     }
 
     return response()->json(['transactions' => $transactions], 200);
 }
+
 
 
 
