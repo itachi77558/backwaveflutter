@@ -7,6 +7,8 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+
 
 class TransactionController extends Controller
 {
@@ -22,47 +24,69 @@ class TransactionController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        $sender = auth()->user(); // Authenticated user is the sender
+        $sender = auth()->user();
         $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
 
-        // Prevent transferring to oneself
         if ($sender->id === $receiver->id) {
             return response()->json(['error' => 'You cannot transfer money to yourself'], 400);
         }
 
-        // Check if the sender has sufficient balance
         if ($sender->balance < $request->amount) {
             return response()->json(['error' => 'Insufficient balance'], 400);
         }
 
         DB::transaction(function () use ($sender, $receiver, $request) {
-            // Deduct amount from sender and add to receiver
             $sender->balance -= $request->amount;
             $sender->save();
 
             $receiver->balance += $request->amount;
             $receiver->save();
 
-            // Record "sent" transaction for the sender
+            $transactionId = Str::uuid(); // Génère un identifiant unique
+
+            // Enregistrer la transaction pour l'expéditeur
             Transaction::create([
+                'transaction_id' => $transactionId,
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
-                'direction' => 'sent', // Indicates the sender side of the transaction
+                'direction' => 'sent',
             ]);
 
-            // Record "received" transaction for the receiver
+            // Enregistrer la transaction pour le destinataire
             Transaction::create([
+                'transaction_id' => $transactionId,
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
-                'direction' => 'received', // Indicates the receiver side of the transaction
+                'direction' => 'received',
             ]);
         });
 
         return response()->json(['message' => 'Transfer successful'], 200);
+    }
+
+
+
+    public function getTransactionDetails($transactionId)
+    {
+        $transaction = Transaction::where('transaction_id', $transactionId)->first();
+
+        if (!$transaction) {
+            return response()->json(['error' => 'Transaction not found'], 404);
+        }
+
+        return response()->json([
+            'transaction_id' => $transaction->transaction_id,
+            'type' => $transaction->type,
+            'direction' => $transaction->direction,
+            'sender' => User::find($transaction->sender_id)->only(['id', 'first_name', 'last_name', 'phone_number']),
+            'receiver' => User::find($transaction->receiver_id)->only(['id', 'first_name', 'last_name', 'phone_number']),
+            'amount' => $transaction->amount,
+            'date' => $transaction->created_at->format('d M Y H:i'),
+        ]);
     }
 
 
