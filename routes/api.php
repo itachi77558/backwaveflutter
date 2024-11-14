@@ -28,4 +28,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/checkcontact', [UserController::class, 'checkContacts']);
     Route::post('/multiple-transfer', [TransactionController::class, 'multipleTransfer']); 
     Route::get('/list-transaction', [TransactionController::class, 'listTransactions']);  
+    Route::get('/transaction/{transaction_id}', [TransactionController::class, 'getTransactionDetails']);  
 });
