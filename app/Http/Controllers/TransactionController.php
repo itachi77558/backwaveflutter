@@ -7,8 +7,6 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-
 
 class TransactionController extends Controller
 {
@@ -24,69 +22,47 @@ class TransactionController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        $sender = auth()->user();
+        $sender = auth()->user(); // Authenticated user is the sender
         $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
 
+        // Prevent transferring to oneself
         if ($sender->id === $receiver->id) {
             return response()->json(['error' => 'You cannot transfer money to yourself'], 400);
         }
 
+        // Check if the sender has sufficient balance
         if ($sender->balance < $request->amount) {
             return response()->json(['error' => 'Insufficient balance'], 400);
         }
 
         DB::transaction(function () use ($sender, $receiver, $request) {
+            // Deduct amount from sender and add to receiver
             $sender->balance -= $request->amount;
             $sender->save();
 
             $receiver->balance += $request->amount;
             $receiver->save();
 
-            $transactionId = Str::uuid(); // Génère un identifiant unique
-
-            // Enregistrer la transaction pour l'expéditeur
+            // Record "sent" transaction for the sender
             Transaction::create([
-                'transaction_id' => $transactionId,
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
-                'direction' => 'sent',
+                'direction' => 'sent', // Indicates the sender side of the transaction
             ]);
 
-            // Enregistrer la transaction pour le destinataire
+            // Record "received" transaction for the receiver
             Transaction::create([
-                'transaction_id' => $transactionId,
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
-                'direction' => 'received',
+                'direction' => 'received', // Indicates the receiver side of the transaction
             ]);
         });
 
         return response()->json(['message' => 'Transfer successful'], 200);
-    }
-
-
-
-    public function getTransactionDetails($transactionId)
-    {
-        $transaction = Transaction::where('transaction_id', $transactionId)->first();
-
-        if (!$transaction) {
-            return response()->json(['error' => 'Transaction not found'], 404);
-        }
-
-        return response()->json([
-            'transaction_id' => $transaction->transaction_id,
-            'type' => $transaction->type,
-            'direction' => $transaction->direction,
-            'sender' => User::find($transaction->sender_id)->only(['id', 'first_name', 'last_name', 'phone_number']),
-            'receiver' => User::find($transaction->receiver_id)->only(['id', 'first_name', 'last_name', 'phone_number']),
-            'amount' => $transaction->amount,
-            'date' => $transaction->created_at->format('d M Y H:i'),
-        ]);
     }
 
 
@@ -209,46 +185,29 @@ class TransactionController extends Controller
 
     public function listTransactions(Request $request)
 {
-    // Récupérer l'utilisateur authentifié
-    $user = auth()->user();
+    $user = auth()->user(); // Authenticated user is the one we retrieve transactions for
 
-    // Vérifier si l'utilisateur est authentifié
-    if (!$user) {
-        return response()->json(['error' => 'Utilisateur non authentifié'], 401);
-    }
-
-    // Récupérer les transactions où l'utilisateur est soit l'expéditeur, soit le destinataire
-    $transactions = Transaction::where('sender_id', $user->id)
-                        ->orWhere('receiver_id', $user->id)
-                        ->orderBy('created_at', 'desc')
-                        ->get()
-                        ->map(function ($transaction) use ($user) {
-                            // Déterminer la direction de la transaction
-                            $isSent = $transaction->sender_id === $user->id;
-                            $otherUserId = $isSent ? $transaction->receiver_id : $transaction->sender_id;
-                            $otherUser = User::find($otherUserId);
-
-                            return [
-                                'type' => $transaction->type,
-                                'amount' => $transaction->amount,
-                                'direction' => $isSent ? 'sent' : 'received',
-                                'other_party' => [
-                                    'phone_number' => optional($otherUser)->phone_number ?? 'Externe',
-                                    'name' => optional($otherUser)->first_name . ' ' . optional($otherUser)->last_name ?? 'Externe'
-                                ],
-                                'date' => $transaction->created_at->format('d M Y'),
-                            ];
-                        });
-
-    // Vérifier si des transactions ont été trouvées
-    if ($transactions->isEmpty()) {
-        return response()->json(['message' => 'Aucune transaction trouvée'], 200);
-    }
+    // Get transactions where the user is the sender or receiver
+    $transactions = Transaction::where(function ($query) use ($user) {
+                                $query->where('sender_id', $user->id)
+                                      ->orWhere('receiver_id', $user->id);
+                            })
+                            ->orderBy('created_at', 'desc')
+                            ->get()
+                            ->map(function ($transaction) use ($user) {
+                                return [
+                                    'type' => $transaction->type,
+                                    'amount' => $transaction->amount,
+                                    'direction' => $transaction->sender_id === $user->id ? 'sent' : 'received',
+                                    'other_party' => $transaction->sender_id === $user->id 
+                                                        ? User::find($transaction->receiver_id)->phone_number ?? 'External'
+                                                        : User::find($transaction->sender_id)->phone_number ?? 'External',
+                                    'date' => $transaction->created_at->format('d M Y'),
+                                ];
+                            });
 
     return response()->json(['transactions' => $transactions], 200);
 }
-
-
 
 
 

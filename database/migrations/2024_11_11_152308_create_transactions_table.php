@@ -13,9 +13,8 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->string('transaction_id')->unique(); // Identifiant unique pour chaque transaction
             $table->enum('type', ['transfer', 'withdraw']);
-            $table->enum('direction', ['sent', 'received'])->default('sent'); // Suivi de la direction
+            $table->enum('direction', ['sent', 'received'])->default('sent'); // New field to track direction
             $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('receiver_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->decimal('amount', 15, 2);
