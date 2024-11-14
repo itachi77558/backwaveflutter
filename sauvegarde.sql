@@ -193,7 +193,6 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 CREATE TABLE public.transactions (
     id bigint NOT NULL,
-    transaction_id character varying(255) NOT NULL,
     type character varying(255) NOT NULL,
     direction character varying(255) DEFAULT 'sent'::character varying NOT NULL,
     sender_id bigint NOT NULL,
@@ -409,7 +408,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.transactions (id, transaction_id, type, direction, sender_id, receiver_id, amount, created_at, updated_at) FROM stdin;
+COPY public.transactions (id, type, direction, sender_id, receiver_id, amount, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -540,14 +539,6 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 ALTER TABLE ONLY public.transactions
     ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
-
-
---
--- Name: transactions transactions_transaction_id_unique; Type: CONSTRAINT; Schema: public; Owner: pfdev31
---
-
-ALTER TABLE ONLY public.transactions
-    ADD CONSTRAINT transactions_transaction_id_unique UNIQUE (transaction_id);
 
 
 --
