@@ -170,47 +170,49 @@ class UserController extends Controller
     */
 
     private function generateAndUploadQrCode($user)
-    {
-        // Générer un identifiant unique pour l'utilisateur s'il n'en a pas
-        $uniqueId = $user->unique_id ?? Str::uuid();
-        
-        // Créer le contenu du QR Code (vous pouvez personnaliser selon vos besoins)
-        $qrContent = json_encode([
-            'user_id' => $user->id,
-            'unique_id' => $uniqueId,
-            'name' => $user->first_name . ' ' . $user->last_name
-        ]);
+{
+    // Générer un identifiant unique pour l'utilisateur s'il n'en a pas
+    $uniqueId = $user->unique_id ?? Str::uuid();
+    
+    // Créer le contenu du QR Code incluant le numéro de téléphone
+    $qrContent = json_encode([
+        'user_id' => $user->id,
+        'unique_id' => $uniqueId,
+        'name' => $user->first_name . ' ' . $user->last_name,
+        'phone_number' => $user->phone_number // Ajout du numéro de téléphone
+    ]);
 
-        // Génération du QR Code
-        $qrCode = QrCode::create($qrContent)
-            ->setSize(300)
-            ->setMargin(10);
+    // Génération du QR Code
+    $qrCode = QrCode::create($qrContent)
+        ->setSize(300)
+        ->setMargin(10);
 
-        $writer = new PngWriter();
-        $result = $writer->write($qrCode);
-        
-        // Sauvegarde temporaire du QR Code
-        $tempPath = sys_get_temp_dir() . '/qr-' . $user->id . '.png';
-        $result->saveToFile($tempPath);
+    $writer = new PngWriter();
+    $result = $writer->write($qrCode);
+    
+    // Sauvegarde temporaire du QR Code
+    $tempPath = sys_get_temp_dir() . '/qr-' . $user->id . '.png';
+    $result->saveToFile($tempPath);
 
-        // Upload vers Cloudinary
-        $uploadApi = new UploadApi();
-        $result = $uploadApi->upload($tempPath, [
-            'folder' => 'qrcodes',
-            'public_id' => 'user-' . $user->id,
-        ]);
+    // Upload vers Cloudinary
+    $uploadApi = new UploadApi();
+    $result = $uploadApi->upload($tempPath, [
+        'folder' => 'qrcodes',
+        'public_id' => 'user-' . $user->id,
+    ]);
 
-        // Suppression du fichier temporaire
-        unlink($tempPath);
+    // Suppression du fichier temporaire
+    unlink($tempPath);
 
-        // Mettre à jour l'identifiant unique de l'utilisateur si nécessaire
-        if (!$user->unique_id) {
-            $user->unique_id = $uniqueId;
-            $user->save();
-        }
-
-        return $result['secure_url'];
+    // Mettre à jour l'identifiant unique de l'utilisateur si nécessaire
+    if (!$user->unique_id) {
+        $user->unique_id = $uniqueId;
+        $user->save();
     }
+
+    return $result['secure_url'];
+}
+
 
     public function createAccount(Request $request)
     {
