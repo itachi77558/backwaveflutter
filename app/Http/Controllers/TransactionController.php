@@ -225,6 +225,58 @@ class TransactionController extends Controller
 }
 
 
+public function cancelTransaction(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'transaction_id' => 'required|exists:transactions,id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
+    }
+
+    $transaction = Transaction::find($request->transaction_id);
+
+    $currentUser = auth()->user();
+
+    // Vérification : Seul l'expéditeur peut annuler la transaction
+    if ($transaction->sender_id !== $currentUser->id) {
+        return response()->json(['error' => 'Vous n\'avez pas l\'autorisation d\'annuler cette transaction'], 403);
+    }
+
+    // Vérifier si la transaction a déjà été annulée
+    if ($transaction->canceled_at) {
+        return response()->json(['error' => 'Transaction déjà annulée'], 400);
+    }
+
+    // Vérification : Annulation possible uniquement dans les 30 minutes
+    if (now()->diffInMinutes($transaction->created_at) > 30) {
+        return response()->json(['error' => 'Annulation impossible après 30 minutes'], 400);
+    }
+
+    $sender = User::find($transaction->sender_id);
+    $receiver = User::find($transaction->receiver_id);
+
+    DB::transaction(function () use ($transaction, $sender, $receiver) {
+        // Rembourser l'expéditeur
+        $sender->balance += $transaction->amount;
+        $sender->save();
+
+        // Réduire le montant du destinataire
+        $receiver->balance -= $transaction->amount;
+        $receiver->save();
+
+        // Marquer la transaction comme annulée
+        $transaction->canceled_at = now();
+        $transaction->save();
+    });
+
+    return response()->json(['message' => 'Transaction annulée avec succès'], 200);
+}
+
+
+
+
 
 
 

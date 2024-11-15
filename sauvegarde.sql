@@ -198,6 +198,7 @@ CREATE TABLE public.transactions (
     sender_id bigint NOT NULL,
     receiver_id bigint,
     amount numeric(15,2) NOT NULL,
+    canceled_at timestamp(0) without time zone,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     CONSTRAINT transactions_direction_check CHECK (((direction)::text = ANY ((ARRAY['sent'::character varying, 'received'::character varying])::text[]))),
@@ -377,14 +378,14 @@ COPY public.media (id, medially_type, medially_id, file_url, file_name, file_typ
 --
 
 COPY public.migrations (id, migration, batch) FROM stdin;
-1	2014_10_12_000000_create_users_table	1
-2	2014_10_12_100000_create_password_reset_tokens_table	1
-3	2019_08_19_000000_create_failed_jobs_table	1
-4	2019_12_14_000001_create_personal_access_tokens_table	1
-5	2020_06_14_000001_create_media_table	1
-6	2024_11_09_124739_create_verification_codes_table	1
-7	2024_11_10_153724_add_is_phone_verified_to_users_table	1
-8	2024_11_11_152308_create_transactions_table	1
+17	2014_10_12_000000_create_users_table	1
+18	2014_10_12_100000_create_password_reset_tokens_table	1
+19	2019_08_19_000000_create_failed_jobs_table	1
+20	2019_12_14_000001_create_personal_access_tokens_table	1
+21	2020_06_14_000001_create_media_table	1
+22	2024_11_09_124739_create_verification_codes_table	1
+23	2024_11_10_153724_add_is_phone_verified_to_users_table	1
+24	2024_11_11_152308_create_transactions_table	1
 \.
 
 
@@ -408,7 +409,7 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 -- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
-COPY public.transactions (id, type, direction, sender_id, receiver_id, amount, created_at, updated_at) FROM stdin;
+COPY public.transactions (id, type, direction, sender_id, receiver_id, amount, canceled_at, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -446,7 +447,7 @@ SELECT pg_catalog.setval('public.media_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 8, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 24, true);
 
 
 --

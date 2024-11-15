@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('receiver_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->decimal('amount', 15, 2);
+            $table->timestamp('canceled_at')->nullable(); // Nouvelle colonne pour les annulations
             $table->timestamps();
         });
     }
