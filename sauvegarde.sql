@@ -378,14 +378,14 @@ COPY public.media (id, medially_type, medially_id, file_url, file_name, file_typ
 --
 
 COPY public.migrations (id, migration, batch) FROM stdin;
-17	2014_10_12_000000_create_users_table	1
-18	2014_10_12_100000_create_password_reset_tokens_table	1
-19	2019_08_19_000000_create_failed_jobs_table	1
-20	2019_12_14_000001_create_personal_access_tokens_table	1
-21	2020_06_14_000001_create_media_table	1
-22	2024_11_09_124739_create_verification_codes_table	1
-23	2024_11_10_153724_add_is_phone_verified_to_users_table	1
-24	2024_11_11_152308_create_transactions_table	1
+9	2014_10_12_000000_create_users_table	1
+10	2014_10_12_100000_create_password_reset_tokens_table	1
+11	2019_08_19_000000_create_failed_jobs_table	1
+12	2019_12_14_000001_create_personal_access_tokens_table	1
+13	2020_06_14_000001_create_media_table	1
+14	2024_11_09_124739_create_verification_codes_table	1
+15	2024_11_10_153724_add_is_phone_verified_to_users_table	1
+16	2024_11_11_152308_create_transactions_table	1
 \.
 
 
@@ -447,7 +447,7 @@ SELECT pg_catalog.setval('public.media_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 24, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 16, true);
 
 
 --

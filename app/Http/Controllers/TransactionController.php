@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
-    // Transférer des fonds entre utilisateurs
+    /**
+     * Transférer des fonds entre utilisateurs.
+     */
     public function transfer(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -22,55 +24,53 @@ class TransactionController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        $sender = auth()->user(); // Authenticated user is the sender
+        $sender = auth()->user();
         $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
 
-        // Prevent transferring to oneself
+        // Vérification : pas de transfert à soi-même
         if ($sender->id === $receiver->id) {
-            return response()->json(['error' => 'You cannot transfer money to yourself'], 400);
+            return response()->json(['error' => 'Vous ne pouvez pas transférer de l\'argent à vous-même.'], 400);
         }
 
-        // Check if the sender has sufficient balance
+        // Vérification : solde suffisant
         if ($sender->balance < $request->amount) {
-            return response()->json(['error' => 'Insufficient balance'], 400);
+            return response()->json(['error' => 'Solde insuffisant pour effectuer ce transfert.'], 400);
         }
 
         DB::transaction(function () use ($sender, $receiver, $request) {
-            // Deduct amount from sender and add to receiver
+            // Mise à jour des soldes
             $sender->balance -= $request->amount;
             $sender->save();
 
             $receiver->balance += $request->amount;
             $receiver->save();
 
-            // Record "sent" transaction for the sender
+            // Création des transactions
             Transaction::create([
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
-                'direction' => 'sent', // Indicates the sender side of the transaction
+                'direction' => 'sent',
             ]);
 
-            // Record "received" transaction for the receiver
             Transaction::create([
                 'type' => 'transfer',
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
                 'amount' => $request->amount,
-                'direction' => 'received', // Indicates the receiver side of the transaction
+                'direction' => 'received',
             ]);
         });
 
-        return response()->json(['message' => 'Transfer successful'], 200);
+        return response()->json(['message' => 'Transfert effectué avec succès.'], 200);
     }
 
-
-    // In TransactionController.php
-
+    /**
+     * Effectuer plusieurs transferts à la fois.
+     */
     public function multipleTransfer(Request $request)
     {
-        // Validate each transfer in the list
         $validator = Validator::make($request->all(), [
             'transfers' => 'required|array|min:1',
             'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
@@ -84,32 +84,23 @@ class TransactionController extends Controller
         $sender = auth()->user();
         $totalAmount = array_sum(array_column($request->transfers, 'amount'));
 
-        // Check if the sender has enough balance for all transfers
+        // Vérification : solde suffisant pour tous les transferts
         if ($sender->balance < $totalAmount) {
-            return response()->json(['error' => 'Insufficient balance for multiple transfers'], 400);
-        }
-
-        // Ensure no self-transfers and no duplicate recipients
-        $recipientPhones = array_column($request->transfers, 'receiver_phone');
-        if (in_array($sender->phone_number, $recipientPhones)) {
-            return response()->json(['error' => 'You cannot transfer money to yourself'], 400);
-        }
-        if (count($recipientPhones) !== count(array_unique($recipientPhones))) {
-            return response()->json(['error' => 'Duplicate transfers to the same recipient are not allowed'], 400);
+            return response()->json(['error' => 'Solde insuffisant pour effectuer tous les transferts.'], 400);
         }
 
         DB::transaction(function () use ($sender, $request) {
             foreach ($request->transfers as $transfer) {
                 $receiver = User::where('phone_number', $transfer['receiver_phone'])->first();
 
-                // Deduct amount from sender and add to receiver
+                // Mise à jour des soldes
                 $sender->balance -= $transfer['amount'];
                 $sender->save();
 
                 $receiver->balance += $transfer['amount'];
                 $receiver->save();
 
-                // Record "sent" transaction for the sender
+                // Création des transactions
                 Transaction::create([
                     'type' => 'transfer',
                     'sender_id' => $sender->id,
@@ -118,7 +109,6 @@ class TransactionController extends Controller
                     'direction' => 'sent',
                 ]);
 
-                // Record "received" transaction for the receiver
                 Transaction::create([
                     'type' => 'transfer',
                     'sender_id' => $sender->id,
@@ -129,156 +119,93 @@ class TransactionController extends Controller
             }
         });
 
-        return response()->json(['message' => 'Multiple transfers successful'], 200);
+        return response()->json(['message' => 'Transferts multiples effectués avec succès.'], 200);
     }
 
-    
-
-
-    // Effectuer un retrait pour l'utilisateur
-
-    /*
-    public function withdraw(Request $request)
+    /**
+     * Annuler une transaction si elle respecte les critères d'annulation.
+     */
+    public function cancelTransaction(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:1',
+            'transaction_id' => 'required|exists:transactions,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        $user = User::find($request->user_id);
+        $transaction = Transaction::findOrFail($request->transaction_id);
+        $currentUser = auth()->user();
 
-        if ($user->balance < $request->amount) {
-            return response()->json(['error' => 'Insufficient balance'], 400);
+        // Vérification : seul l'expéditeur peut annuler la transaction
+        if ($transaction->sender_id !== $currentUser->id) {
+            return response()->json(['error' => 'Vous n\'avez pas l\'autorisation d\'annuler cette transaction.'], 403);
         }
 
-        DB::transaction(function () use ($user, $request) {
-            $user->balance -= $request->amount;
-            $user->save();
+        // Vérification : transaction déjà annulée
+        if ($transaction->canceled_at) {
+            return response()->json(['error' => 'Cette transaction a déjà été annulée.'], 400);
+        }
 
-            Transaction::create([
-                'type' => 'withdraw',
-                'sender_id' => $user->id,
-                'receiver_id' => null,
-                'amount' => $request->amount,
-            ]);
+        // Vérification : annulation dans les 30 minutes
+        if (now()->diffInMinutes($transaction->created_at) > 30) {
+            return response()->json(['error' => 'Annulation impossible après 30 minutes.'], 400);
+        }
+
+        $sender = User::find($transaction->sender_id);
+        $receiver = User::find($transaction->receiver_id);
+
+        DB::transaction(function () use ($transaction, $sender, $receiver) {
+            // Remboursement de l'expéditeur
+            $sender->balance += $transaction->amount;
+            $sender->save();
+
+            // Déduction chez le destinataire
+            $receiver->balance -= $transaction->amount;
+            $receiver->save();
+
+            // Marquer la transaction comme annulée
+            $transaction->canceled_at = now();
+            $transaction->save();
         });
 
-        return response()->json(['message' => 'Withdrawal successful'], 200);
+        return response()->json(['message' => 'Transaction annulée avec succès.'], 200);
     }
 
-    // Lister toutes les transactions
-    public function listTransactions(Request $request)
+    /**
+     * Lister toutes les transactions pour l'utilisateur authentifié.
+     */
+    public function listTransactions()
     {
-        $userId = $request->user_id;
-        $transactions = Transaction::where('sender_id', $userId)
-                                   ->orWhere('receiver_id', $userId)
-                                   ->get();
+        $user = auth()->user();
 
-        return response()->json($transactions);
-    }*/
+        if (!$user) {
+            return response()->json(['error' => 'Utilisateur non authentifié.'], 401);
+        }
 
+        $transactions = Transaction::where('sender_id', $user->id)
+            ->orWhere('receiver_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($transaction) use ($user) {
+                $isSent = $transaction->sender_id === $user->id;
+                $otherUser = User::find($isSent ? $transaction->receiver_id : $transaction->sender_id);
 
+                return [
+                    'transaction_id' => $transaction->id,
+                    'type' => $transaction->type,
+                    'amount' => $transaction->amount,
+                    'direction' => $isSent ? 'sent' : 'received',
+                    'other_party' => [
+                        'name' => optional($otherUser)->first_name . ' ' . optional($otherUser)->last_name,
+                        'phone_number' => optional($otherUser)->phone_number,
+                    ],
+                    'date' => $transaction->created_at->format('d M Y H:i'),
+                    'cancelable' => $isSent && now()->diffInMinutes($transaction->created_at) <= 30,
+                ];
+            });
 
-    public function listTransactions(Request $request)
-{
-    // Récupérer l'utilisateur authentifié
-    $user = auth()->user();
-
-    // Vérifier si l'utilisateur est authentifié
-    if (!$user) {
-        return response()->json(['error' => 'Utilisateur non authentifié'], 401);
+        return response()->json(['transactions' => $transactions], 200);
     }
-
-    // Récupérer les transactions où l'utilisateur est soit l'expéditeur, soit le destinataire
-    $transactions = Transaction::where('sender_id', $user->id)
-                        ->orWhere('receiver_id', $user->id)
-                        ->orderBy('created_at', 'desc')
-                        ->get()
-                        ->map(function ($transaction) use ($user) {
-                            // Déterminer la direction de la transaction
-                            $isSent = $transaction->sender_id === $user->id;
-                            $otherUserId = $isSent ? $transaction->receiver_id : $transaction->sender_id;
-                            $otherUser = User::find($otherUserId);
-
-                            return [
-                                'type' => $transaction->type,
-                                'amount' => $transaction->amount,
-                                'direction' => $isSent ? 'sent' : 'received',
-                                'other_party' => [
-                                    'phone_number' => optional($otherUser)->phone_number ?? 'Externe',
-                                    'name' => optional($otherUser)->first_name . ' ' . optional($otherUser)->last_name ?? 'Externe'
-                                ],
-                                'date' => $transaction->created_at->format('d M Y'),
-                            ];
-                        });
-
-    // Vérifier si des transactions ont été trouvées
-    if ($transactions->isEmpty()) {
-        return response()->json(['message' => 'Aucune transaction trouvée'], 200);
-    }
-
-    return response()->json(['transactions' => $transactions], 200);
-}
-
-
-public function cancelTransaction(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'transaction_id' => 'required|exists:transactions,id',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['error' => $validator->errors()], 400);
-    }
-
-    $transaction = Transaction::find($request->transaction_id);
-
-    $currentUser = auth()->user();
-
-    // Vérification : Seul l'expéditeur peut annuler la transaction
-    if ($transaction->sender_id !== $currentUser->id) {
-        return response()->json(['error' => 'Vous n\'avez pas l\'autorisation d\'annuler cette transaction'], 403);
-    }
-
-    // Vérifier si la transaction a déjà été annulée
-    if ($transaction->canceled_at) {
-        return response()->json(['error' => 'Transaction déjà annulée'], 400);
-    }
-
-    // Vérification : Annulation possible uniquement dans les 30 minutes
-    if (now()->diffInMinutes($transaction->created_at) > 30) {
-        return response()->json(['error' => 'Annulation impossible après 30 minutes'], 400);
-    }
-
-    $sender = User::find($transaction->sender_id);
-    $receiver = User::find($transaction->receiver_id);
-
-    DB::transaction(function () use ($transaction, $sender, $receiver) {
-        // Rembourser l'expéditeur
-        $sender->balance += $transaction->amount;
-        $sender->save();
-
-        // Réduire le montant du destinataire
-        $receiver->balance -= $transaction->amount;
-        $receiver->save();
-
-        // Marquer la transaction comme annulée
-        $transaction->canceled_at = now();
-        $transaction->save();
-    });
-
-    return response()->json(['message' => 'Transaction annulée avec succès'], 200);
-}
-
-
-
-
-
-
-
-
 }
