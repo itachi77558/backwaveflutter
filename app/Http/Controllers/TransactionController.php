@@ -176,36 +176,56 @@ class TransactionController extends Controller
     /**
      * Lister toutes les transactions pour l'utilisateur authentifié.
      */
-    public function listTransactions()
-    {
-        $user = auth()->user();
+    public function listTransactions(Request $request)
+{
+    $user = auth()->user();
 
-        if (!$user) {
-            return response()->json(['error' => 'Utilisateur non authentifié.'], 401);
-        }
-
-        $transactions = Transaction::where('sender_id', $user->id)
-            ->orWhere('receiver_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($transaction) use ($user) {
-                $isSent = $transaction->sender_id === $user->id;
-                $otherUser = User::find($isSent ? $transaction->receiver_id : $transaction->sender_id);
-
-                return [
-                    'transaction_id' => $transaction->id,
-                    'type' => $transaction->type,
-                    'amount' => $transaction->amount,
-                    'direction' => $isSent ? 'sent' : 'received',
-                    'other_party' => [
-                        'name' => optional($otherUser)->first_name . ' ' . optional($otherUser)->last_name,
-                        'phone_number' => optional($otherUser)->phone_number,
-                    ],
-                    'date' => $transaction->created_at->format('d M Y H:i'),
-                    'cancelable' => $isSent && now()->diffInMinutes($transaction->created_at) <= 30,
-                ];
-            });
-
-        return response()->json(['transactions' => $transactions], 200);
+    if (!$user) {
+        return response()->json(['error' => 'Utilisateur non authentifié.'], 401);
     }
+
+    // Get pagination parameters
+    $page = $request->query('page', 1); // Default to page 1
+    $pageSize = $request->query('page_size', 5); // Default to 5 items per page
+
+    // Fetch paginated transactions
+    $query = Transaction::where('sender_id', $user->id)
+        ->orWhere('receiver_id', $user->id)
+        ->orderBy('created_at', 'desc');
+
+    $totalTransactions = $query->count();
+    $transactions = $query
+        ->skip(($page - 1) * $pageSize)
+        ->take($pageSize)
+        ->get()
+        ->map(function ($transaction) use ($user) {
+            $isSent = $transaction->sender_id === $user->id;
+            $otherUser = User::find($isSent ? $transaction->receiver_id : $transaction->sender_id);
+
+            return [
+                'transaction_id' => $transaction->id,
+                'type' => $transaction->type,
+                'amount' => $transaction->amount,
+                'direction' => $isSent ? 'sent' : 'received',
+                'other_party' => [
+                    'name' => optional($otherUser)->first_name . ' ' . optional($otherUser)->last_name,
+                    'phone_number' => optional($otherUser)->phone_number,
+                ],
+                'date' => $transaction->created_at->format('d M Y H:i'),
+                'status' => $transaction->canceled_at ? 'canceled' : 'completed',
+                'cancelable' => $isSent && !$transaction->canceled_at && now()->diffInMinutes($transaction->created_at) <= 30,
+            ];
+        });
+
+    return response()->json([
+        'transactions' => $transactions,
+        'pagination' => [
+            'current_page' => $page,
+            'page_size' => $pageSize,
+            'total_transactions' => $totalTransactions,
+            'total_pages' => ceil($totalTransactions / $pageSize),
+        ],
+    ], 200);
+}
+
 }
