@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ScheduledTransaction;
 use App\Models\User;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -232,5 +233,34 @@ class TransactionController extends Controller
         ],
     ], 200);
 }
+
+public function scheduleTransaction(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'receiver_phone_number' => 'required|exists:users,phone_number',
+            'amount' => 'required|numeric|min:1',
+            'scheduled_at' => 'required|date|after:now',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        $sender = auth()->user();
+        $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
+
+        if ($sender->balance < $request->amount) {
+            return response()->json(['error' => 'Solde insuffisant pour programmer ce transfert.'], 400);
+        }
+
+        ScheduledTransaction::create([
+            'sender_id' => $sender->id,
+            'receiver_id' => $receiver->id,
+            'amount' => $request->amount,
+            'scheduled_at' => $request->scheduled_at,
+        ]);
+
+        return response()->json(['message' => 'Transaction programmée avec succès.'], 201);
+    }
 
 }
