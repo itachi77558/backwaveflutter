@@ -263,4 +263,71 @@ public function scheduleTransaction(Request $request)
         return response()->json(['message' => 'Transaction programmée avec succès.'], 201);
     }
 
+
+
+    public function executeScheduledTransactions()
+{
+    // Récupérer les transactions programmées et non exécutées dont la date est atteinte
+    $transactions = ScheduledTransaction::where('status', 'pending')
+        ->where('scheduled_at', '<=', now())
+        ->get();
+
+    foreach ($transactions as $transaction) {
+        DB::transaction(function () use ($transaction) {
+            $sender = User::find($transaction->sender_id);
+            $receiver = User::find($transaction->receiver_id);
+
+            // Vérifier le solde de l'expéditeur
+            if ($sender->balance >= $transaction->amount) {
+                // Mise à jour des soldes
+                $sender->balance -= $transaction->amount;
+                $sender->save();
+
+                $receiver->balance += $transaction->amount;
+                $receiver->save();
+
+                // Marquer la transaction comme terminée
+                $transaction->status = 'completed';
+                $transaction->save();
+
+                // Enregistrer la transaction dans la table des transactions
+                Transaction::create([
+                    'type' => 'transfer',
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'amount' => $transaction->amount,
+                    'direction' => 'sent',
+                ]);
+
+                Transaction::create([
+                    'type' => 'transfer',
+                    'sender_id' => $receiver->id,
+                    'receiver_id' => $sender->id,
+                    'amount' => $transaction->amount,
+                    'direction' => 'received',
+                ]);
+            } else {
+                // Marquer comme échouée si le solde est insuffisant
+                $transaction->status = 'failed';
+                $transaction->save();
+            }
+        });
+    }
+
+    return response()->json(['message' => 'Transactions programmées exécutées avec succès.'], 200);
+}
+
+
+public function listScheduledTransactions()
+{
+    $user = auth()->user();
+
+    $transactions = ScheduledTransaction::where('sender_id', $user->id)
+        ->orderBy('scheduled_at', 'asc')
+        ->get();
+
+    return response()->json($transactions, 200);
+}
+
+
 }
