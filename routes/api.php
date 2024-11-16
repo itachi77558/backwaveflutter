@@ -30,3 +30,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/list-transaction', [TransactionController::class, 'listTransactions']);  
     Route::post('/cancel-transaction', [TransactionController::class, 'cancelTransaction']);
 });
+
+// Route pour programmer une transaction
+Route::middleware('auth:sanctum')->post('/transactions/schedule', [TransactionController::class, 'scheduleTransaction']);
+
+// Route pour lister les transactions programmées (optionnel)
+Route::middleware('auth:sanctum')->get('/transactions/scheduled', [TransactionController::class, 'listScheduledTransactions']);

@@ -188,6 +188,46 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 
 --
+-- Name: scheduled_transactions; Type: TABLE; Schema: public; Owner: pfdev31
+--
+
+CREATE TABLE public.scheduled_transactions (
+    id bigint NOT NULL,
+    sender_id bigint NOT NULL,
+    receiver_id bigint NOT NULL,
+    amount numeric(15,2) NOT NULL,
+    scheduled_at timestamp(0) without time zone NOT NULL,
+    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT scheduled_transactions_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'completed'::character varying, 'failed'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.scheduled_transactions OWNER TO pfdev31;
+
+--
+-- Name: scheduled_transactions_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
+--
+
+CREATE SEQUENCE public.scheduled_transactions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.scheduled_transactions_id_seq OWNER TO pfdev31;
+
+--
+-- Name: scheduled_transactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
+--
+
+ALTER SEQUENCE public.scheduled_transactions_id_seq OWNED BY public.scheduled_transactions.id;
+
+
+--
 -- Name: transactions; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
@@ -337,6 +377,13 @@ ALTER TABLE ONLY public.personal_access_tokens ALTER COLUMN id SET DEFAULT nextv
 
 
 --
+-- Name: scheduled_transactions id; Type: DEFAULT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.scheduled_transactions ALTER COLUMN id SET DEFAULT nextval('public.scheduled_transactions_id_seq'::regclass);
+
+
+--
 -- Name: transactions id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
@@ -386,6 +433,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 14	2024_11_09_124739_create_verification_codes_table	1
 15	2024_11_10_153724_add_is_phone_verified_to_users_table	1
 16	2024_11_11_152308_create_transactions_table	1
+17	2024_11_16_170808_create_scheduled_transactions_table	2
 \.
 
 
@@ -402,6 +450,14 @@ COPY public.password_reset_tokens (email, token, created_at) FROM stdin;
 --
 
 COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, token, abilities, last_used_at, expires_at, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: scheduled_transactions; Type: TABLE DATA; Schema: public; Owner: pfdev31
+--
+
+COPY public.scheduled_transactions (id, sender_id, receiver_id, amount, scheduled_at, status, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -447,7 +503,7 @@ SELECT pg_catalog.setval('public.media_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 16, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 17, true);
 
 
 --
@@ -455,6 +511,13 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 16, true);
 --
 
 SELECT pg_catalog.setval('public.personal_access_tokens_id_seq', 1, false);
+
+
+--
+-- Name: scheduled_transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
+--
+
+SELECT pg_catalog.setval('public.scheduled_transactions_id_seq', 1, false);
 
 
 --
@@ -535,6 +598,14 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
+-- Name: scheduled_transactions scheduled_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.scheduled_transactions
+    ADD CONSTRAINT scheduled_transactions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
 --
 
@@ -594,6 +665,22 @@ CREATE INDEX media_medially_type_medially_id_index ON public.media USING btree (
 --
 
 CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.personal_access_tokens USING btree (tokenable_type, tokenable_id);
+
+
+--
+-- Name: scheduled_transactions scheduled_transactions_receiver_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.scheduled_transactions
+    ADD CONSTRAINT scheduled_transactions_receiver_id_foreign FOREIGN KEY (receiver_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: scheduled_transactions scheduled_transactions_sender_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.scheduled_transactions
+    ADD CONSTRAINT scheduled_transactions_sender_id_foreign FOREIGN KEY (sender_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
