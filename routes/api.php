@@ -36,6 +36,6 @@ Route::middleware('auth:sanctum')->post('/transactions/schedule', [TransactionCo
 
 // Route pour lister les transactions programmées (optionnel)
 Route::middleware('auth:sanctum')->get('/transactions/scheduled', [TransactionController::class, 'listScheduledTransactions']);
-Route::post('/transactions/execute-scheduled', [TransactionController::class, 'executeScheduledTransactions']);
+Route::middleware('auth:sanctum')->get('/transactions/execute', [TransactionController::class, 'executeScheduledTransactions']);
 Route::middleware('auth:sanctum')->get('/transactions/scheduled', [TransactionController::class, 'listScheduledTransactions']);
 

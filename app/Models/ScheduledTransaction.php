@@ -17,5 +17,14 @@ class ScheduledTransaction extends Model
         'status',
     ];
 
-    protected $dates = ['scheduled_at'];
+    // Relations
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
 }

@@ -267,55 +267,56 @@ public function scheduleTransaction(Request $request)
 
     public function executeScheduledTransactions()
 {
-    // Récupérer les transactions programmées et non exécutées dont la date est atteinte
-    $transactions = ScheduledTransaction::where('status', 'pending')
-        ->where('scheduled_at', '<=', now())
+    $now = now();
+
+    // Récupérer toutes les transactions programmées en attente
+    $scheduledTransactions = ScheduledTransaction::where('status', 'pending')
+        ->where('scheduled_at', '<=', $now)
         ->get();
 
-    foreach ($transactions as $transaction) {
-        DB::transaction(function () use ($transaction) {
-            $sender = User::find($transaction->sender_id);
-            $receiver = User::find($transaction->receiver_id);
+    foreach ($scheduledTransactions as $transaction) {
+        $sender = User::find($transaction->sender_id);
+        $receiver = User::find($transaction->receiver_id);
 
-            // Vérifier le solde de l'expéditeur
-            if ($sender->balance >= $transaction->amount) {
-                // Mise à jour des soldes
-                $sender->balance -= $transaction->amount;
-                $sender->save();
+        // Vérification : solde suffisant
+        if ($sender->balance < $transaction->amount) {
+            $transaction->update(['status' => 'failed']);
+            continue;
+        }
 
-                $receiver->balance += $transaction->amount;
-                $receiver->save();
+        DB::transaction(function () use ($transaction, $sender, $receiver) {
+            // Mise à jour des soldes
+            $sender->balance -= $transaction->amount;
+            $sender->save();
 
-                // Marquer la transaction comme terminée
-                $transaction->status = 'completed';
-                $transaction->save();
+            $receiver->balance += $transaction->amount;
+            $receiver->save();
 
-                // Enregistrer la transaction dans la table des transactions
-                Transaction::create([
-                    'type' => 'transfer',
-                    'sender_id' => $sender->id,
-                    'receiver_id' => $receiver->id,
-                    'amount' => $transaction->amount,
-                    'direction' => 'sent',
-                ]);
+            // Création des transactions
+            Transaction::create([
+                'type' => 'transfer',
+                'sender_id' => $transaction->sender_id,
+                'receiver_id' => $transaction->receiver_id,
+                'amount' => $transaction->amount,
+                'direction' => 'sent',
+            ]);
 
-                Transaction::create([
-                    'type' => 'transfer',
-                    'sender_id' => $receiver->id,
-                    'receiver_id' => $sender->id,
-                    'amount' => $transaction->amount,
-                    'direction' => 'received',
-                ]);
-            } else {
-                // Marquer comme échouée si le solde est insuffisant
-                $transaction->status = 'failed';
-                $transaction->save();
-            }
+            Transaction::create([
+                'type' => 'transfer',
+                'sender_id' => $transaction->receiver_id,
+                'receiver_id' => $transaction->sender_id,
+                'amount' => $transaction->amount,
+                'direction' => 'received',
+            ]);
+
+            // Marquer comme terminée
+            $transaction->update(['status' => 'completed']);
         });
     }
 
-    return response()->json(['message' => 'Transactions programmées exécutées avec succès.'], 200);
+    return response()->json(['message' => 'Transactions programmées exécutées.']);
 }
+
 
 
 public function listScheduledTransactions()
