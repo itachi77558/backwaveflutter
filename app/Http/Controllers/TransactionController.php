@@ -251,56 +251,55 @@ public function scheduleTransaction(Request $request)
 
 
     public function executeScheduledTransactions()
-{
-    $now = now();
-
-    // Récupérer toutes les transactions programmées en attente
-    $scheduledTransactions = ScheduledTransaction::where('status', 'pending')
-        ->where('scheduled_at', '<=', $now)
-        ->get();
-
-    foreach ($scheduledTransactions as $transaction) {
-        $sender = User::find($transaction->sender_id);
-        $receiver = User::find($transaction->receiver_id);
-
-        // Vérification : solde suffisant
-        if ($sender->balance < $transaction->amount) {
-            $transaction->update(['status' => 'failed']);
-            continue;
+    {
+        $now = now();
+    
+        // Récupérer toutes les transactions programmées en attente
+        $scheduledTransactions = ScheduledTransaction::where('status', 'pending')
+            ->where('scheduled_at', '<=', $now)
+            ->lockForUpdate() // Verrouiller pour éviter les accès simultanés
+            ->get();
+    
+        foreach ($scheduledTransactions as $transaction) {
+            $sender = User::find($transaction->sender_id);
+            $receiver = User::find($transaction->receiver_id);
+    
+            // Vérification : solde suffisant
+            if ($sender->balance < $transaction->amount) {
+                $transaction->update(['status' => 'failed']);
+                continue;
+            }
+    
+            try {
+                DB::transaction(function () use ($transaction, $sender, $receiver) {
+                    // Mise à jour des soldes
+                    $sender->balance -= $transaction->amount;
+                    $sender->save();
+    
+                    $receiver->balance += $transaction->amount;
+                    $receiver->save();
+    
+                    // Création d'une seule transaction
+                    Transaction::create([
+                        'type' => 'transfer',
+                        'sender_id' => $transaction->sender_id,
+                        'receiver_id' => $transaction->receiver_id,
+                        'amount' => $transaction->amount,
+                        'direction' => 'sent',
+                    ]);
+    
+                    // Mise à jour rapide du statut
+                    $transaction->update(['status' => 'completed']);
+                });
+            } catch (\Exception $e) {
+                // Gestion des erreurs
+                $transaction->update(['status' => 'failed']);
+            }
         }
-
-        DB::transaction(function () use ($transaction, $sender, $receiver) {
-            // Mise à jour des soldes
-            $sender->balance -= $transaction->amount;
-            $sender->save();
-
-            $receiver->balance += $transaction->amount;
-            $receiver->save();
-
-            // Création des transactions
-            Transaction::create([
-                'type' => 'transfer',
-                'sender_id' => $transaction->sender_id,
-                'receiver_id' => $transaction->receiver_id,
-                'amount' => $transaction->amount,
-                'direction' => 'sent',
-            ]);
-
-            Transaction::create([
-                'type' => 'transfer',
-                'sender_id' => $transaction->receiver_id,
-                'receiver_id' => $transaction->sender_id,
-                'amount' => $transaction->amount,
-                'direction' => 'received',
-            ]);
-
-            // Marquer comme terminée
-            $transaction->update(['status' => 'completed']);
-        });
+    
+        return response()->json(['message' => 'Transactions programmées exécutées.']);
     }
-
-    return response()->json(['message' => 'Transactions programmées exécutées.']);
-}
+    
 
 
 
