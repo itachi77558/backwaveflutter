@@ -403,12 +403,17 @@ public function listScheduledTransactions(Request $request)
         ->take($pageSize)
         ->get()
         ->map(function ($transaction) {
+            // Ensure scheduled_at is parsed as DateTime before formatting
+            $scheduledAt = $transaction->scheduled_at instanceof \DateTime
+                ? $transaction->scheduled_at
+                : new \DateTime($transaction->scheduled_at);
+
             return [
                 'transaction_id' => $transaction->id,
                 'receiver_phone_number' => optional($transaction->receiver)->phone_number,
                 'amount' => $transaction->amount,
                 'status' => $transaction->status,
-                'scheduled_at' => $transaction->scheduled_at->format('d M Y H:i'),
+                'scheduled_at' => $scheduledAt->format('d M Y H:i'),
             ];
         });
 
@@ -422,6 +427,7 @@ public function listScheduledTransactions(Request $request)
         ],
     ], 200);
 }
+
 
 
 
