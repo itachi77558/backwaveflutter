@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contact;
 use App\Models\ScheduledTransaction;
 use App\Models\User;
 use App\Models\Transaction;
