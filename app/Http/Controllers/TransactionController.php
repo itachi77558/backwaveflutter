@@ -222,10 +222,10 @@ class TransactionController extends Controller
 public function scheduleTransaction(Request $request)
 {
     $validator = Validator::make($request->all(), [
-        'transfers' => 'required|array|min:1',
-        'transfers.*.receiver_phone_number' => 'required|exists:users,phone_number',
-        'transfers.*.amount' => 'required|numeric|min:1',
-        'scheduled_at' => 'required|date|after:now',
+        'transfers' => 'required|array|min:1', // Liste des transferts
+        'transfers.*.receiver_phone_number' => 'required|exists:users,phone_number', // Vérification des numéros de téléphone
+        'transfers.*.amount' => 'required|numeric|min:1', // Validation des montants
+        'scheduled_at' => 'required|date|after:now', // Date future obligatoire
     ]);
 
     if ($validator->fails()) {
@@ -233,34 +233,39 @@ public function scheduleTransaction(Request $request)
     }
 
     $sender = auth()->user();
-    $totalAmount = array_sum(array_column($request->transfers, 'amount'));
-
-    // Vérifiez si le solde de l'utilisateur est suffisant pour tous les transferts
-    if ($sender->balance < $totalAmount) {
-        return response()->json(['error' => 'Solde insuffisant pour programmer ces transferts.'], 400);
-    }
 
     try {
-        DB::transaction(function () use ($request, $sender) {
+        DB::transaction(function () use ($sender, $request) {
             foreach ($request->transfers as $transfer) {
                 $receiver = User::where('phone_number', $transfer['receiver_phone_number'])->first();
 
-                // Créez une transaction programmée pour chaque destinataire
+                // Vérification : ne pas se transférer à soi-même
+                if ($sender->id === $receiver->id) {
+                    throw new \Exception("Vous ne pouvez pas programmer un transfert à vous-même.");
+                }
+
+                // Vérification : solde suffisant
+                if ($sender->balance < $transfer['amount']) {
+                    throw new \Exception("Solde insuffisant pour programmer le transfert de {$transfer['amount']} à {$receiver->phone_number}.");
+                }
+
+                // Création de la transaction programmée
                 ScheduledTransaction::create([
                     'sender_id' => $sender->id,
                     'receiver_id' => $receiver->id,
                     'amount' => $transfer['amount'],
                     'scheduled_at' => $request->scheduled_at,
-                    'status' => 'pending',
+                    'status' => 'pending', // Statut initial
                 ]);
             }
         });
 
-        return response()->json(['message' => 'Transferts programmés avec succès.'], 201);
+        return response()->json(['message' => 'Transactions programmées avec succès.'], 201);
     } catch (\Exception $e) {
-        return response()->json(['error' => 'Une erreur est survenue lors de la programmation des transferts.'], 500);
+        return response()->json(['error' => $e->getMessage()], 400);
     }
 }
+
 
 
 
