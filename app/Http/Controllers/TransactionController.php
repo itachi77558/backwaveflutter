@@ -20,44 +20,66 @@ class TransactionController extends Controller
             'receiver_phone_number' => 'required|exists:users,phone_number',
             'amount' => 'required|numeric|min:1',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
-    
-        $sender = auth()->user();
+
+        $sender = auth()->user(); // Utilisateur connecté
         $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
-    
-        if ($sender->phone_number === $receiver->phone_number) {
-            return response()->json(['error' => 'Vous ne pouvez pas transférer de l\'argent à vous-même.'], 400);
+
+        // Vérifier si le destinataire est déjà dans les contacts de l'utilisateur
+        $isContact = Contact::where('user_id', $sender->id)
+                            ->where('contact_user_id', $receiver->id)
+                            ->exists();
+
+        if (!$isContact) {
+            // Ajouter le destinataire en tant que contact si inexistant
+            $this->addContact($sender, $receiver);
         }
-    
+
+        // Vérifier que le solde de l'expéditeur est suffisant
         if ($sender->balance < $request->amount) {
-            return response()->json(['error' => 'Solde insuffisant pour effectuer ce transfert.'], 400);
+            return response()->json([
+                'error' => 'Solde insuffisant pour effectuer le transfert'
+            ], 403);
         }
-    
+
         try {
             DB::transaction(function () use ($sender, $receiver, $request) {
+                // Déduire le montant du solde de l'expéditeur
                 $sender->balance -= $request->amount;
                 $sender->save();
-    
+
+                // Ajouter le montant au solde du destinataire
                 $receiver->balance += $request->amount;
                 $receiver->save();
-    
-                // Une seule transaction créée
+
+                // Enregistrer la transaction
                 Transaction::create([
-                    'type' => 'transfer',
                     'sender_id' => $sender->id,
                     'receiver_id' => $receiver->id,
                     'amount' => $request->amount,
-                    'direction' => 'sent', // ou utilisez "transfer" si 'direction' n'est pas nécessaire
+                    'type' => 'transfer',
                 ]);
             });
-    
-            return response()->json(['message' => 'Transfert effectué avec succès.'], 200);
+
+            return response()->json(['message' => 'Transfert réussi'], 201);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Une erreur est survenue lors du transfert.'], 500);
         }
+    }
+
+    /**
+     * Ajoute un contact à l'utilisateur.
+     */
+    private function addContact($sender, $receiver)
+    {
+        Contact::create([
+            'user_id' => $sender->id,
+            'contact_user_id' => $receiver->id,
+            'name' => $receiver->first_name . ' ' . $receiver->last_name, // Ou autre logique pour nommer le contact
+        ]);
     }
     
 
