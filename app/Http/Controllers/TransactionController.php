@@ -15,10 +15,62 @@ class TransactionController extends Controller
      * Transférer des fonds entre utilisateurs.
      */
     public function transfer(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'receiver_phone_number' => 'required|exists:users,phone_number',
+            'amount' => 'required|numeric|min:1',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+    
+        $sender = auth()->user();
+        $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
+    
+        if ($sender->phone_number === $receiver->phone_number) {
+            return response()->json(['error' => 'Vous ne pouvez pas transférer de l\'argent à vous-même.'], 400);
+        }
+    
+        if ($sender->balance < $request->amount) {
+            return response()->json(['error' => 'Solde insuffisant pour effectuer ce transfert.'], 400);
+        }
+    
+        try {
+            DB::transaction(function () use ($sender, $receiver, $request) {
+                $sender->balance -= $request->amount;
+                $sender->save();
+    
+                $receiver->balance += $request->amount;
+                $receiver->save();
+    
+                // Une seule transaction créée
+                Transaction::create([
+                    'type' => 'transfer',
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'amount' => $request->amount,
+                    'direction' => 'sent', // ou utilisez "transfer" si 'direction' n'est pas nécessaire
+                ]);
+            });
+    
+            return response()->json(['message' => 'Transfert effectué avec succès.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Une erreur est survenue lors du transfert.'], 500);
+        }
+    }
+    
+
+
+    /**
+     * Effectuer plusieurs transferts à la fois.
+     */
+    public function multipleTransfer(Request $request)
 {
     $validator = Validator::make($request->all(), [
-        'receiver_phone_number' => 'required|exists:users,phone_number',
-        'amount' => 'required|numeric|min:1',
+        'transfers' => 'required|array|min:1',
+        'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
+        'transfers.*.amount' => 'required|numeric|min:1',
     ]);
 
     if ($validator->fails()) {
@@ -26,87 +78,24 @@ class TransactionController extends Controller
     }
 
     $sender = auth()->user();
-    $receiver = User::where('phone_number', $request->receiver_phone_number)->first();
+    $totalAmount = array_sum(array_column($request->transfers, 'amount'));
 
-    // Vérification : pas de transfert à soi-même
-    if ($sender->phone_number === $receiver->phone_number) {
-        return response()->json(['error' => 'Vous ne pouvez pas transférer de l\'argent à vous-même.'], 400);
-    }
-
-    // Vérification : solde suffisant
-    if ($sender->balance < $request->amount) {
-        return response()->json(['error' => 'Solde insuffisant pour effectuer ce transfert.'], 400);
+    if ($sender->balance < $totalAmount) {
+        return response()->json(['error' => 'Solde insuffisant pour effectuer tous les transferts.'], 400);
     }
 
     try {
-        DB::transaction(function () use ($sender, $receiver, $request) {
-            // Mise à jour des soldes
-            $sender->balance -= $request->amount;
-            $sender->save();
-
-            $receiver->balance += $request->amount;
-            $receiver->save();
-
-            // Création des transactions
-            Transaction::create([
-                'type' => 'transfer',
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $request->amount,
-                'direction' => 'sent',
-            ]);
-
-            Transaction::create([
-                'type' => 'transfer',
-                'sender_id' => $receiver->id,
-                'receiver_id' => $sender->id,
-                'amount' => $request->amount,
-                'direction' => 'received',
-            ]);
-        });
-
-        return response()->json(['message' => 'Transfert effectué avec succès.'], 200);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Une erreur est survenue lors du transfert.'], 500);
-    }
-}
-
-
-    /**
-     * Effectuer plusieurs transferts à la fois.
-     */
-    public function multipleTransfer(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'transfers' => 'required|array|min:1',
-            'transfers.*.receiver_phone' => 'required|exists:users,phone_number',
-            'transfers.*.amount' => 'required|numeric|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-        $sender = auth()->user();
-        $totalAmount = array_sum(array_column($request->transfers, 'amount'));
-
-        // Vérification : solde suffisant pour tous les transferts
-        if ($sender->balance < $totalAmount) {
-            return response()->json(['error' => 'Solde insuffisant pour effectuer tous les transferts.'], 400);
-        }
-
         DB::transaction(function () use ($sender, $request) {
             foreach ($request->transfers as $transfer) {
                 $receiver = User::where('phone_number', $transfer['receiver_phone'])->first();
 
-                // Mise à jour des soldes
                 $sender->balance -= $transfer['amount'];
                 $sender->save();
 
                 $receiver->balance += $transfer['amount'];
                 $receiver->save();
 
-                // Création des transactions
+                // Une seule transaction créée
                 Transaction::create([
                     'type' => 'transfer',
                     'sender_id' => $sender->id,
@@ -114,19 +103,15 @@ class TransactionController extends Controller
                     'amount' => $transfer['amount'],
                     'direction' => 'sent',
                 ]);
-
-                Transaction::create([
-                    'type' => 'transfer',
-                    'sender_id' => $sender->id,
-                    'receiver_id' => $receiver->id,
-                    'amount' => $transfer['amount'],
-                    'direction' => 'received',
-                ]);
             }
         });
 
         return response()->json(['message' => 'Transferts multiples effectués avec succès.'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Une erreur est survenue lors des transferts.'], 500);
     }
+}
+
 
     /**
      * Annuler une transaction si elle respecte les critères d'annulation.
