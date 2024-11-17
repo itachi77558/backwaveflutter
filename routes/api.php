@@ -40,4 +40,6 @@ Route::middleware('auth:sanctum')->post('/transactions/schedule', [TransactionCo
 Route::middleware('auth:sanctum')->get('/transactions/scheduled', [TransactionController::class, 'listScheduledTransactions']);
 Route::get('/transactions/execute', [TransactionController::class, 'executeScheduledTransactions']);
 //Route::middleware('auth:sanctum')->get('/transactions/scheduled', [TransactionController::class, 'listScheduledTransactions']);
+Route::middleware('auth:sanctum')->post('/transactions/cancel-scheduled', [TransactionController::class, 'cancelScheduledTransaction']);
+
 

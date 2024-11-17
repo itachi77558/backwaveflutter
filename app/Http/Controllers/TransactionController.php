@@ -342,6 +342,40 @@ public function scheduleTransaction(Request $request)
     
         return response()->json(['message' => 'Transactions programmées exécutées.']);
     }
+
+
+
+    public function cancelScheduledTransaction(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'transaction_id' => 'required|exists:scheduled_transactions,id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
+    }
+
+    $user = auth()->user();
+    $transaction = ScheduledTransaction::where('id', $request->transaction_id)
+        ->where('sender_id', $user->id)
+        ->first();
+
+    if (!$transaction) {
+        return response()->json(['error' => 'Transaction non trouvée ou non autorisée'], 404);
+    }
+
+    if ($transaction->status !== 'pending') {
+        return response()->json(['error' => 'Seules les transactions en attente peuvent être annulées'], 400);
+    }
+
+    try {
+        $transaction->update(['status' => 'canceled']);
+        return response()->json(['message' => 'Transaction programmée annulée avec succès'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Erreur lors de l\'annulation de la transaction'], 500);
+    }
+}
+
     
 
 
