@@ -21,6 +21,43 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: contacts; Type: TABLE; Schema: public; Owner: pfdev31
+--
+
+CREATE TABLE public.contacts (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    contact_user_id bigint NOT NULL,
+    name character varying(255),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.contacts OWNER TO pfdev31;
+
+--
+-- Name: contacts_id_seq; Type: SEQUENCE; Schema: public; Owner: pfdev31
+--
+
+CREATE SEQUENCE public.contacts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.contacts_id_seq OWNER TO pfdev31;
+
+--
+-- Name: contacts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfdev31
+--
+
+ALTER SEQUENCE public.contacts_id_seq OWNED BY public.contacts.id;
+
+
+--
 -- Name: failed_jobs; Type: TABLE; Schema: public; Owner: pfdev31
 --
 
@@ -349,6 +386,13 @@ ALTER SEQUENCE public.verification_codes_id_seq OWNED BY public.verification_cod
 
 
 --
+-- Name: contacts id; Type: DEFAULT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.contacts ALTER COLUMN id SET DEFAULT nextval('public.contacts_id_seq'::regclass);
+
+
+--
 -- Name: failed_jobs id; Type: DEFAULT; Schema: public; Owner: pfdev31
 --
 
@@ -405,6 +449,14 @@ ALTER TABLE ONLY public.verification_codes ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Data for Name: contacts; Type: TABLE DATA; Schema: public; Owner: pfdev31
+--
+
+COPY public.contacts (id, user_id, contact_user_id, name, created_at, updated_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: failed_jobs; Type: TABLE DATA; Schema: public; Owner: pfdev31
 --
 
@@ -434,6 +486,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 15	2024_11_10_153724_add_is_phone_verified_to_users_table	1
 16	2024_11_11_152308_create_transactions_table	1
 17	2024_11_16_170808_create_scheduled_transactions_table	2
+18	2024_11_17_151842_create_contacts_table	3
 \.
 
 
@@ -486,6 +539,13 @@ COPY public.verification_codes (id, user_id, code, created_at, updated_at) FROM 
 
 
 --
+-- Name: contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
+--
+
+SELECT pg_catalog.setval('public.contacts_id_seq', 1, false);
+
+
+--
 -- Name: failed_jobs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
@@ -503,7 +563,7 @@ SELECT pg_catalog.setval('public.media_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pfdev31
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 17, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 18, true);
 
 
 --
@@ -539,6 +599,14 @@ SELECT pg_catalog.setval('public.users_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.verification_codes_id_seq', 1, false);
+
+
+--
+-- Name: contacts contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.contacts
+    ADD CONSTRAINT contacts_pkey PRIMARY KEY (id);
 
 
 --
@@ -665,6 +733,22 @@ CREATE INDEX media_medially_type_medially_id_index ON public.media USING btree (
 --
 
 CREATE INDEX personal_access_tokens_tokenable_type_tokenable_id_index ON public.personal_access_tokens USING btree (tokenable_type, tokenable_id);
+
+
+--
+-- Name: contacts contacts_contact_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.contacts
+    ADD CONSTRAINT contacts_contact_user_id_foreign FOREIGN KEY (contact_user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contacts contacts_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: pfdev31
+--
+
+ALTER TABLE ONLY public.contacts
+    ADD CONSTRAINT contacts_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --

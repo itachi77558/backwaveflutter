@@ -29,6 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/multiple-transfer', [TransactionController::class, 'multipleTransfer']); 
     Route::get('/list-transaction', [TransactionController::class, 'listTransactions']);  
     Route::post('/cancel-transaction', [TransactionController::class, 'cancelTransaction']);
+    Route::post('/add-contact', [TransactionController::class, 'addContact']);
+
 });
 
 // Route pour programmer une transaction
