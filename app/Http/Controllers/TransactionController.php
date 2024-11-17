@@ -380,16 +380,50 @@ public function scheduleTransaction(Request $request)
 
 
 
-public function listScheduledTransactions()
+public function listScheduledTransactions(Request $request)
 {
     $user = auth()->user();
 
-    $transactions = ScheduledTransaction::where('sender_id', $user->id)
-        ->orderBy('scheduled_at', 'asc')
-        ->get();
+    if (!$user) {
+        return response()->json(['error' => 'Utilisateur non authentifié.'], 401);
+    }
 
-    return response()->json($transactions, 200);
+    // Paramètres de pagination
+    $page = $request->query('page', 1); // Par défaut : page 1
+    $pageSize = $request->query('page_size', 10); // Par défaut : 10 éléments par page
+
+    // Récupérer les transactions programmées
+    $query = ScheduledTransaction::where('sender_id', $user->id)
+        ->orderBy('scheduled_at', 'asc');
+
+    $totalTransactions = $query->count();
+
+    $transactions = $query
+        ->skip(($page - 1) * $pageSize)
+        ->take($pageSize)
+        ->get()
+        ->map(function ($transaction) {
+            return [
+                'transaction_id' => $transaction->id,
+                'receiver_name' => optional($transaction->receiver)->first_name . ' ' . optional($transaction->receiver)->last_name,
+                'receiver_phone_number' => optional($transaction->receiver)->phone_number,
+                'amount' => $transaction->amount,
+                'status' => $transaction->status,
+                'scheduled_at' => $transaction->scheduled_at->format('d M Y H:i'),
+            ];
+        });
+
+    return response()->json([
+        'transactions' => $transactions,
+        'pagination' => [
+            'current_page' => $page,
+            'page_size' => $pageSize,
+            'total_transactions' => $totalTransactions,
+            'total_pages' => ceil($totalTransactions / $pageSize),
+        ],
+    ], 200);
 }
+
 
 
 }
