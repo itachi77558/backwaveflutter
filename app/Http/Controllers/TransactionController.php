@@ -405,7 +405,6 @@ public function listScheduledTransactions(Request $request)
         ->map(function ($transaction) {
             return [
                 'transaction_id' => $transaction->id,
-                'receiver_name' => optional($transaction->receiver)->first_name . ' ' . optional($transaction->receiver)->last_name,
                 'receiver_phone_number' => optional($transaction->receiver)->phone_number,
                 'amount' => $transaction->amount,
                 'status' => $transaction->status,
@@ -423,6 +422,7 @@ public function listScheduledTransactions(Request $request)
         ],
     ], 200);
 }
+
 
 
 
